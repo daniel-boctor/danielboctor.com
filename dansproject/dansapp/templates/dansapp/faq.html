@@ -1,0 +1,19 @@
+{% extends "dansapp/layout.html" %}
+
+{% block title %}FAQ{% endblock %}
+
+{% block body %}
+    <h1>FAQ</h1>
+
+    <p><a class="link-dark faq" id="1" href="#1"><h5>I am seeing conflicts between this data and data on other sites (portfoliovisualizer, etc). How come?</a></h5></p>
+    It is not uncommon to see discrepancies in data between different sites. Our methodology is as follows.
+    All monthly samples use month start data is used as an anchor point. This means that if a sample is displayed as March - October, the data spans March 1st - October 1st.
+    In addition to this, daily data is used over the entire sample, from the first available close, right up until the most recent trading day, and will use the current intra-day price during market hours. 
+    It is also imporant to note that if multiple securities have different inception dates, the most recent one will be used for the entire sample.
+
+    <p><a class="link-dark faq" id="2" href="#2"><h5>What's next?</a></h5></p>
+    Style analysis, dynamic weighting schemes, stochastic models, portfolio insurance, and machine learning models are all in the works.
+
+    <p><a class="link-dark faq" id="3" href="#3"><h5>Contact</a></h5></p>
+    If you would like to contact me to report a bug, or to suggest a new feature, please email: <a href="mailto:dboctor18@gmail.com">dboctor18@gmail.com.</a>
+{% endblock %}

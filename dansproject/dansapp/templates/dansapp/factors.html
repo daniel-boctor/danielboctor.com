@@ -1,0 +1,72 @@
+{% extends "dansapp/layout.html" %}
+{% load static %}
+
+{% block title %}Factors{% endblock %}
+
+{% block script %}<script src="{% static 'dansapp/primaryforms.js' %}"></script>{% endblock %}
+
+{% block body %}
+    <h1>Factor Regression</h1>
+
+    <h4>Regress returns against different factor models</h4>
+
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="accordion" id="accordionExample">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            More Info
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <ul>
+                            <li><strong>Tickers:</strong> Enter a valid ticker for any publicly traded security on North American markets. Reminder: Canadian securities should have the suffix ".to". 
+                                Classes of shares, such as BRK class A and B, should be entered with a dash ( - ).</li>
+                            <li><strong>Granularity:</strong> Only monthly data is available for factor regressions at the moment.</li>
+                            <li><strong>Start date:</strong> This will be the start of the data. Leave blank to start the data at inception.</li>
+                            <li><strong>End date:</strong> This will be the end of the data. Leave blank to end the data at present.</li>
+                            <li><strong>Factor model:</strong> This is the model that returns will be regressed against. Fama French models are only available at the moment. AQR models will be comming soon!</li>
+                            <li><strong>Rolling regression:</strong> This feature will preform a rolling factor regression with a roll window of your choosing. NOTE: with multiple securities / portfolios, this may take a long time to compile, due to the amount of data needed.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br>
+
+    <form action="{% url 'factors' %}" method="POST" id="form_container">
+    {% csrf_token %}{{ formset.management_form }}
+    {% include "dansapp/formlayouts/nestedform.html" with form=form formset=formset tickerform=tickerform saved=saved %}
+    </form>
+
+    {% if range %}
+
+    <div class="alert alert-primary" role="alert">
+        <div class="container">
+            <div class="row">
+                <div class="col"><strong>Start:</strong> {{ range.0 }}</div>
+                <div class="col"><strong>End:</strong> {{ range.1 }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <h5>{{ title }}</h5>
+    <div class="table-responsive">
+        {{ stats | safe }}
+    </div>
+
+    {% if graphs %}
+    {% for graph in graphs %}
+    <div class="graph">
+        {{ graph | safe }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% endif %}
+
+{% endblock %}

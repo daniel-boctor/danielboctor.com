@@ -1,0 +1,40 @@
+<div class="table-responsive">
+    <table class="table table-hover">
+
+        {% for error in form.non_field_errors %}
+        <div class="alert alert-danger alert-dismissible sticky-top fade show" role="alert">
+            <strong>Validation error:</strong> {{ error }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+
+        {% for field in form %}
+
+        {% for error in field.errors %}
+        <div class="alert alert-danger alert-dismissible sticky-top fade show" role="alert">
+            <strong>{{ field.label }}:</strong> {{ error }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+
+            {% if not "weight" in field.label_tag %}
+                <tr>
+            {% endif %}
+            {% if "name" in field.label_tag %}
+                <td colspan="1">{{ field.label_tag }}</td>
+                <td colspan="3">{{ field }}</td>
+            {% endif %}
+            {% if not "name" in field.label_tag %}
+                {% if not "Id:" in field.label_tag %}
+                    <td>{{ field.label_tag }}</td>
+                    <td>{{ field }}</td>
+                {% else %}
+                    <td style="display: none;">{{ field }}</td>
+                {% endif %}
+            {% endif %}
+            {% if not "ticker" %}
+                </tr>
+            {% endif %}
+        {% endfor %}
+    </table>
+</div>

@@ -1,0 +1,30 @@
+<div class="row">
+    <div class="col-lg-3 meta_form">
+        {% include "dansapp/formlayouts/metaform.html" with form=form %}
+    </div>
+
+    {% for form in formset %}
+    
+    <div class="col-lg-3 portfolio_form">
+        {% include "dansapp/formlayouts/portfolioform.html" with form=form %}
+    </div>
+    {% endfor %}
+
+    <div class="col-lg-3" id="tickerform_block">
+        {% include "dansapp/formlayouts/tickerform.html" with tickerform=tickerform %}
+    </div>
+</div>    
+{% if user.is_authenticated %}
+<select style="width: auto;" class="form-select" aria-label="Default select example", id="select_portfolio" onchange="addForm(event.target.value)">
+    <option disabled selected value="default">Saved Portfolios</option>
+    {% for portfolio in saved %}
+        <option value="{{ portfolio }}">{{ portfolio }}</option>
+    {% empty %}
+        <option>No saved portfolios! Head to your account page to get started.</option>
+    {% endfor %}
+</select>
+<br>
+{% endif %}
+<button type="submit" class="btn btn-outline-teal">Submit</button>
+<button type="button" class="btn btn-outline-primary" id="add_form" onclick="addForm(event.target.id)">Add Additional Portfolio</button>
+<button type="button" class="btn btn-outline-danger" id="remove_form" style="display: none;" onclick="addForm(event.target.id)">Remove Portfolio</button>

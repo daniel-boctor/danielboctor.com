@@ -1,0 +1,66 @@
+{% extends "dansapp/layout.html" %}
+{% load static %}
+
+{% block title %}Rolling{% endblock %}
+
+{% block script %}<script src="{% static 'dansapp/primaryforms.js' %}"></script>{% endblock %}
+
+{% block body %}
+    <h1>Rolling Returns</h1>
+
+    <h4>Test different rolling windows</h4>
+
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="accordion" id="accordionExample">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            More Info
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <ul>
+                            <li><strong>Tickers:</strong> Enter a valid ticker for any publicly traded security on North American markets. Reminder: Canadian securities should have the suffix ".to". 
+                                Classes of shares, such as BRK class A and B, should be entered with a dash ( - ).</li>
+                            <li><strong>Granularity:</strong> This field changes the granularity of the raw data that is used. Note: all time sensitive fields will assume 253 trading days per year for daily data.</li>
+                            <li><strong>Start date:</strong> This will be the start of the data. Leave blank to start the data at inception.</li>
+                            <li><strong>End date:</strong> This will be the end of the data. Leave blank to end the data at present.</li>
+                            <li><strong>Roll window:</strong> This is the time period that will be used for the window size. This must be less then the amount of sample data available.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br>
+
+    <form action="{% url 'rolling' %}" method="POST" id="form_container">
+    {% csrf_token %}{{ formset.management_form }}
+    {% include "dansapp/formlayouts/nestedform.html" with form=form formset=formset tickerform=tickerform saved=saved %}
+    </form>
+
+    {% if range %}
+
+    <div class="alert alert-primary" role="alert">
+        <div class="container">
+            <div class="row">
+                <div class="col"><strong>Start:</strong> {{ range.0 }}</div>
+                <div class="col"><strong>End:</strong> {{ range.1 }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        {{ stats | safe }}
+    </div>
+
+    <div class="graph">
+        {{ graph | safe }}
+    </div>
+
+    {% endif %}
+
+{% endblock %}
