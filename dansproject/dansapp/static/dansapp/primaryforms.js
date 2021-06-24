@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', function() {
     window.tickerform_block = document.querySelector("#tickerform_block")
     document.getElementById('id_type').addEventListener("change", () => toggle_type(event.target.value));
     toggle_type(document.getElementById('id_type').value);
-    document.querySelector('#id_form-0-ticker1').setAttribute('required', ''); 
-    document.querySelector('#id_form-0-weight1').setAttribute('required', ''); 
+    document.querySelector('#id_form-0-ticker1').setAttribute('required', '');
+    document.querySelector('#id_form-0-weight1').setAttribute('required', '');
     addForm("")
 });
 function toggle_type(type) {
@@ -43,11 +43,13 @@ function granularity_field(type) {
 function toggle_advanced(checked) {
     if (checked) {
         document.getElementById('advanced').style.display = 'block';
+        document.getElementById('basic').style.display = 'none';
     } else {
         document.getElementById('advanced').style.display = 'none';
+        document.getElementById('basic').style.display = 'block';
     }
 }
-function addForm(event) {
+function addForm(event, csv=false) {
     //add or remove new portfolio
     let portfolioForm = document.querySelectorAll(".portfolio_form")
     let totalForms = document.querySelector("#id_form-TOTAL_FORMS")
@@ -64,20 +66,31 @@ function addForm(event) {
         portfolioForm[formNum].remove()
         formNum--
     } else if (event != "") {
-        document.querySelector('#select_portfolio').value = 'default'
-        fetch(`/portfolio_api/${event}`, {
-            method: 'POST',
-            headers: {
-                "X-CSRFToken": getCookie("csrftoken")
-            },
-            mode: "same-origin"
-          })
-          .then(response => response.json())
-          .then(result => {
-            for (const [key, value] of Object.entries(result)) {
-                document.querySelector(`#id_form-${formNum}-${key}`).setAttribute('value', value)
+        if (csv == true) {
+            document.querySelector('#select_csv').value = 'default'
+            if (event != "No saved CSVs! Head to your account page to get started.") {
+                csv_num = document.querySelectorAll('.csv_input').length + 1
+                document.querySelector('#csv_block').insertAdjacentHTML('beforeend', `<tr><td>Saved CSV - ${csv_num}</td><td><input name="csv-${csv_num}" class="form-control csv_input" id="csv-${csv_num}"></td></tr>`);
+                document.querySelector(`#csv-${csv_num}`).setAttribute('value', event)
+                document.querySelector('#id_form-0-ticker1').required = false;
+                document.querySelector('#id_form-0-weight1').required = false;
             }
-          });
+        } else {
+            document.querySelector('#select_portfolio').value = 'default'
+            fetch(`/portfolio_api/${event}`, {
+                method: 'POST',
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                mode: "same-origin"
+            })
+            .then(response => response.json())
+            .then(result => {
+                for (const [key, value] of Object.entries(result)) {
+                    document.querySelector(`#id_form-${formNum}-${key}`).setAttribute('value', value)
+                }
+            });
+        }
     }
     totalForms.setAttribute('value', `${formNum+1}`)
     if (formNum >= 4) {

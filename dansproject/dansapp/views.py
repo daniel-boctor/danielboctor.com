@@ -4,9 +4,9 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
-from .models import User, Portfolio
+from .models import User, Portfolio, RetsCSV
 from django.contrib.auth.decorators import login_required
-from .forms import MyUserCreationForm, UserUpdateForm, MetaForm, PortfolioForm, TickerForm, BasePortfolioFormSet
+from .forms import MyUserCreationForm, UserUpdateForm, MetaForm, PortfolioForm, TickerForm, BasePortfolioFormSet, RetsCSVForm
 from django.forms import modelformset_factory
 import pandas as pd
 from pandas_datareader import data as pdr
@@ -49,52 +49,81 @@ def portfolios(request, username):
     if request.user.username == username:
         from django.forms import modelformset_factory
         PortfolioFormSet = modelformset_factory(Portfolio, form=PortfolioForm, extra=1, max_num=20, absolute_max=20, can_delete=True)
+        RetsCSVFormSet = modelformset_factory(RetsCSV, form=RetsCSVForm, extra=1, max_num=10, absolute_max=10, can_delete=True)
 
         if request.method == "GET":
             return render(request, "dansapp/user/portfolios.html", {
-                "formset": PortfolioFormSet(queryset=Portfolio.objects.filter(user=request.user))
+                "formset": PortfolioFormSet(queryset=Portfolio.objects.filter(user=request.user)),
+                "csvform": RetsCSVFormSet(queryset=RetsCSV.objects.filter(user=request.user))
             })
 
         if request.method == "POST":
-            portfolioformset = PortfolioFormSet(request.POST)
-            if portfolioformset.is_valid():
-                instances = portfolioformset.save(commit=False)
-                for obj in portfolioformset.deleted_objects:
-                    obj.delete()
-                    messages.success(request, f"{obj.name} was successfully deleted.", extra_tags="Success!")
-                for instance in instances:
-                    if Portfolio.objects.filter(user=request.user, name=instance.name).exists():
-                        if Portfolio.objects.get(user=request.user, name=instance.name).id != instance.id:
-                            messages.error(request, f"Portfolio named {instance.name} already exisits.", extra_tags="Error!")
+            if request.POST["form-MAX_NUM_FORMS"] == "20":
+                portfolioformset = PortfolioFormSet(request.POST)
+                if portfolioformset.is_valid():
+                    instances = portfolioformset.save(commit=False)
+                    for obj in portfolioformset.deleted_objects:
+                        obj.delete()
+                        messages.success(request, f"{obj.name} was successfully deleted.", extra_tags="Success!")
+                    for instance in instances:
+                        if Portfolio.objects.filter(user=request.user, name=instance.name).exists():
+                            if Portfolio.objects.get(user=request.user, name=instance.name).id != instance.id:
+                                messages.error(request, f"Portfolio named {instance.name} already exisits.", extra_tags="Error!")
+                                continue
+                        #non duplicate
+                        if not instance.name:
+                            messages.error(request, f"No name entered.", extra_tags="Error!")
                             continue
-                    #non duplicate
-                    if not instance.name:
-                        messages.error(request, f"No name entered.", extra_tags="Error!")
-                        continue
-                    tickers = []
-                    for fieldname in instance._meta.get_fields():
-                        if "ticker" in fieldname.name:
-                            if getattr(instance, fieldname.name):
-                                tickers.append(getattr(instance, fieldname.name))
-                    df = generate_return_series(tickers)   
-                    invalid_tickers = False     
-                    if not isinstance(df, pd.DataFrame):
-                        for error in df:
-                            messages.error(request, f"Invalid ticker entered: {error}", extra_tags="Error!")
-                            invalid_tickers = True
-                    if invalid_tickers:
-                        continue
-                    instance.user = request.user
-                    instance.save()
-                    messages.success(request, f"{instance.name} was successfully saved.", extra_tags="Success!")
-            for form in portfolioformset:
-                for error in form.non_field_errors():
-                    messages.error(request, f"{error}", extra_tags="Validation error:")
-                for field in form:
-                    for error in field.errors:
-                        messages.error(request, f"{error}", extra_tags=f"{field.label}")
+                        tickers = []
+                        for fieldname in instance._meta.get_fields():
+                            if "ticker" in fieldname.name:
+                                if getattr(instance, fieldname.name):
+                                    tickers.append(getattr(instance, fieldname.name))
+                        df = generate_return_series(tickers)   
+                        invalid_tickers = False     
+                        if not isinstance(df, pd.DataFrame):
+                            for error in df:
+                                messages.error(request, f"Invalid ticker entered: {error}", extra_tags="Error!")
+                                invalid_tickers = True
+                        if invalid_tickers:
+                            continue
+                        instance.user = request.user
+                        instance.save()
+                        messages.success(request, f"{instance.name} was successfully saved.", extra_tags="Success!")
+                for form in portfolioformset:
+                    for error in form.non_field_errors():
+                        messages.error(request, f"{error}", extra_tags="Validation error:")
+                    for field in form:
+                        for error in field.errors:
+                            messages.error(request, f"{error}", extra_tags=f"{field.label}")
+
+            if request.POST["form-MAX_NUM_FORMS"] == "10":
+                csvformset = RetsCSVFormSet(request.POST,request.FILES)
+                if csvformset.is_valid():
+                    instances = csvformset.save(commit=False)
+                    for obj in csvformset.deleted_objects:
+                        obj.delete()
+                        messages.success(request, f"{obj.name} was successfully deleted.", extra_tags="Success!")
+                    for instance in instances:
+                        tmp = pd.read_csv(instance.return_series, header=0, index_col=0, parse_dates=True)
+                        if tmp.index.dtype == "O" or tmp.index.dtype != 'datetime64[ns]':
+                            messages.error(request, f"Invalid index entered. Index (column 0) needs to be YYYY-MM-DD or YYYY-MM", extra_tags="Error!")
+                        elif tmp.shape != tmp._get_numeric_data().shape:
+                            messages.error(request, f"All data, exclusing the index and the column headers, must be numeric.", extra_tags="Error!")
+                        else:
+                            instance.user = request.user
+                            instance.save()
+                            messages.success(request, f"{instance.name} was successfully saved.", extra_tags="Success!")
+                for form in csvformset:
+                    for error in form.non_field_errors():
+                        messages.error(request, f"{error}", extra_tags="Validation error:")
+                    for field in form:
+                        for error in field.errors:
+                            messages.error(request, f"{error}", extra_tags=f"{field.label}")
+                
             return render(request, "dansapp/user/portfolios.html", {
-                "formset": PortfolioFormSet(queryset=Portfolio.objects.filter(user=request.user))
+                "formset": PortfolioFormSet(queryset=Portfolio.objects.filter(user=request.user)),
+                "csvform": RetsCSVFormSet(queryset=RetsCSV.objects.filter(user=request.user))
             })
 
 def faq(request):
@@ -108,19 +137,25 @@ def portfolio_api(request, name):
 def backtest(request):
     PortfolioFormSet = modelformset_factory(Portfolio, form=PortfolioForm, formset=BasePortfolioFormSet, extra=1, max_num=5, absolute_max=5)
     saved = []
+    saved_csvs = []
     if request.user.is_authenticated:
         saved = Portfolio.objects.filter(user=request.user).values_list("name", flat=True)
+        saved_csvs = RetsCSV.objects.filter(user=request.user).values_list("name", flat=True)
     if request.method == "GET":
         return render(request, "dansapp/backtest.html", {
             "form": MetaForm(wealth=True),
             "formset": PortfolioFormSet(),
             "tickerform": TickerForm,
-            "saved": saved
+            "saved": saved,
+            "saved_csvs": saved_csvs
     })
 
     if request.method == "POST":
         formset = PortfolioFormSet(request.POST)
-        tickerform = TickerForm(request.POST)
+        if request.POST["type"] == "tickerform_block":
+            tickerform = TickerForm(request.POST)
+        else:
+            tickerform = TickerForm
         #append a "-01" onto the datestamp if granularity == 1mo
         updated_request = request.POST.copy()
         if updated_request["granularity"] == "1mo":
@@ -134,18 +169,21 @@ def backtest(request):
                 "form": form,
                 "formset": formset,
                 "tickerform": tickerform,
-                "saved": saved
+                "saved": saved,
+                "saved_csvs": saved_csvs
             })
         if not form.cleaned_data["initial_wealth"]:
             form.cleaned_data["initial_wealth"] = 10000
-
-        return_vals = create_master_dataframe(request, form, formset, tickerform)
+        
+        csvs = {v for k, v in updated_request.items() if 'csv' in k}
+        return_vals = create_master_dataframe(request, form, formset, tickerform, csvs)
         if not return_vals:
             return render(request, "dansapp/backtest.html", {
             "form": form,
             "formset": formset,
             "tickerform": tickerform,
-            "saved": saved
+            "saved": saved,
+            "saved_csvs": saved_csvs
         })
         master_dataframe, periods_per_year, variable = return_vals
 
@@ -155,19 +193,21 @@ def backtest(request):
     fig = graph.plot(template="simple_white", labels=dict(index="Date", value="Balance", variable=variable))
     fig.update_layout(legend=dict(y=0.99 ,x=0.01), 
         legend_title_text = variable,
-        margin = dict(l=0, r=0),
+        margin = dict(l=0, r=20),
         hovermode = "x unified"
     )
     graph = fig.to_html(full_html=False, include_plotlyjs="cdn")
     range = sample_date_range(master_dataframe)
     summary = summary_stats(master_dataframe, periods_per_year=periods_per_year) 
-    key = key_stats(master_dataframe, periods_per_year=periods_per_year) 
+    key = summary[["Annualized Return", "Annualized Vol", "Max Drawdown"]]
     horse = horserace(master_dataframe, wealth=form.cleaned_data["initial_wealth"]) 
+    print(master_dataframe)
     return render(request, "dansapp/backtest.html", {
         "form": form,
         "formset": formset,
         "tickerform": tickerform,
         "saved": saved,
+        "saved_csvs": saved_csvs,
         "range": range,
         "summary_stats": summary.to_html(classes=["table table-hover table-fit"], border=0,  justify="unset"),
         "key_stats": key.to_html(classes=["table table-hover table-fit"], border=0,  justify="unset"),
@@ -178,19 +218,25 @@ def backtest(request):
 def rolling(request):
     PortfolioFormSet = modelformset_factory(Portfolio, form=PortfolioForm, formset=BasePortfolioFormSet, extra=1, max_num=5, absolute_max=5)
     saved = []
+    saved_csvs = []
     if request.user.is_authenticated:
         saved = Portfolio.objects.filter(user=request.user).values_list("name", flat=True)
+        saved_csvs = RetsCSV.objects.filter(user=request.user).values_list("name", flat=True)
     if request.method == "GET":
         return render(request, "dansapp/rolling.html", {
             "form": MetaForm(rolling=True),
             "formset": PortfolioFormSet(),
             "tickerform": TickerForm,
-            "saved": saved
+            "saved": saved,
+            "saved_csvs": saved_csvs
     })
 
     if request.method == "POST":
         formset = PortfolioFormSet(request.POST)
-        tickerform = TickerForm(request.POST)
+        if request.POST["type"] == "tickerform_block":
+            tickerform = TickerForm(request.POST)
+        else:
+            tickerform = TickerForm
         #append a "-01" onto the datestamp if granularity == 1mo
         updated_request = request.POST.copy()
         if updated_request["granularity"] == "1mo":
@@ -204,16 +250,19 @@ def rolling(request):
                 "form": form,
                 "formset": formset,
                 "tickerform": tickerform,
-                "saved": saved
+                "saved": saved,
+                "saved_csvs": saved_csvs
             })
 
-        return_vals = create_master_dataframe(request, form, formset, tickerform)
+        csvs = {v for k, v in updated_request.items() if 'csv' in k}
+        return_vals = create_master_dataframe(request, form, formset, tickerform, csvs)
         if not return_vals:
             return render(request, "dansapp/rolling.html", {
                 "form": form,
                 "formset": formset,
                 "tickerform": tickerform,
-                "saved": saved
+                "saved": saved,
+                "saved_csvs": saved_csvs
             })
         master_dataframe, periods_per_year, variable = return_vals
         if periods_per_year == 12:
@@ -229,7 +278,8 @@ def rolling(request):
                 "form": form,
                 "formset": formset,
                 "tickerform": tickerform,
-                "saved": saved
+                "saved": saved,
+                "saved_csvs": saved_csvs
             })
         stats = rolling_stats(rolling)
 
@@ -237,7 +287,7 @@ def rolling(request):
         fig = rolling.plot(template="simple_white", labels=dict(index="Date", value="Annualized Return", variable=variable))
         fig.update_layout(legend=dict(y=0.99 ,x=0.01), 
             legend_title_text = variable,
-            margin = dict(l=0, r=0),
+            margin = dict(l=0, r=20),
             hovermode = "x unified",
             title = f"Annualized Rolling Returns ({roll_window} {'Months' if periods_per_year==12 else 'Days'})"
         )
@@ -248,6 +298,7 @@ def rolling(request):
             "formset": formset,
             "tickerform": tickerform,
             "saved": saved,
+            "saved_csvs": saved_csvs,
             "range": range,
             "stats": stats.to_html(classes=["table table-hover table-fit"], border=0,  justify="unset"),
             "graph": graph
@@ -256,19 +307,25 @@ def rolling(request):
 def factors(request):
     PortfolioFormSet = modelformset_factory(Portfolio, form=PortfolioForm, formset=BasePortfolioFormSet, extra=1, max_num=5, absolute_max=5)
     saved = []
+    saved_csvs = []
     if request.user.is_authenticated:
         saved = Portfolio.objects.filter(user=request.user).values_list("name", flat=True)
+        saved_csvs = RetsCSV.objects.filter(user=request.user).values_list("name", flat=True)
     if request.method == "GET":
         return render(request, "dansapp/factors.html", {
             "form": MetaForm(factors=True),
             "formset": PortfolioFormSet(),
             "tickerform": TickerForm,
-            "saved": saved
+            "saved": saved,
+            "saved_csvs": saved_csvs
     })
 
     if request.method == "POST":
         formset = PortfolioFormSet(request.POST)
-        tickerform = TickerForm(request.POST)
+        if request.POST["type"] == "tickerform_block":
+            tickerform = TickerForm(request.POST)
+        else:
+            tickerform = TickerForm
         #append a "-01" onto the datestamp if granularity == 1mo
         updated_request = request.POST.copy()
         if updated_request["granularity"] == "1mo":
@@ -282,16 +339,19 @@ def factors(request):
                 "form": form,
                 "formset": formset,
                 "tickerform": tickerform,
-                "saved": saved
+                "saved": saved,
+                "saved_csvs": saved_csvs
             })
 
-        return_vals = create_master_dataframe(request, form, formset, tickerform)
+        csvs = {v for k, v in updated_request.items() if 'csv' in k}
+        return_vals = create_master_dataframe(request, form, formset, tickerform, csvs)
         if not return_vals:
             return render(request, "dansapp/factors.html", {
                 "form": form,
                 "formset": formset,
                 "tickerform": tickerform,
-                "saved": saved
+                "saved": saved,
+                "saved_csvs": saved_csvs
             })
         master_dataframe, periods_per_year, variable = return_vals
 
@@ -330,13 +390,14 @@ def factors(request):
                         "form": form,
                         "formset": formset,
                         "tickerform": tickerform,
-                        "saved": saved
+                        "saved": saved,
+                        "saved_csvs": saved_csvs
                     })
                 rolling.index = rolling.index.astype(str)
                 fig = rolling.plot(template="simple_white", labels=dict(index="Date", value="Factor Loading", variable=variable))
                 fig.update_layout(legend=dict(y=0.99 ,x=0.01), 
                     legend_title_text = variable,
-                    margin = dict(l=0, r=0),
+                    margin = dict(l=0, r=20),
                     #hovermode = "x unified",
                     title = f"Rolling Factor Loadings ({form.cleaned_data['rolling_regression']} Months) on {col}"
                 )
@@ -348,6 +409,7 @@ def factors(request):
             "formset": formset,
             "tickerform": tickerform,
             "saved": saved,
+            "saved_csvs": saved_csvs,
             "range": range,
             "title": title,
             "stats": factor_loadings.to_html(classes=["table table-hover table-fit"], border=0,  justify="unset"),

@@ -10,7 +10,7 @@
     <div class="row">
         <div class="col-lg-5">
             <form action="{% url 'portfolios' user.username %}" method="POST">
-            {% csrf_token %}{{ formset.management_form }}
+                {% csrf_token %}{{ formset.management_form }}
                 <table class="table">
                     <thead>
                         <tr>
@@ -60,6 +60,36 @@
                 <button type="submit" class="btn btn-outline-teal">Save Changes</button>
                 <a class="btn btn-outline-secondary" href="{% url 'user' username=user.username %}" role="button">Back</a>
             </form>
+        </div>
+        <div class="col-lg-3">
+            <form action="{% url 'portfolios' user.username %}" method="POST", enctype="multipart/form-data">
+                {% csrf_token %}{{ csvform.management_form }}
+                <table class="table">
+                    <thead><tr> <th scope="col">CSV Name</th></tr></thead>
+                    {% for form in csvform %}
+                    {% if not form.name.value %}
+                    <tr><td><a style="color: teal;" class="link-success" data-bs-toggle="collapse" href="#csvform" role="button" aria-expanded="false" aria-controls="collapseExample">
+                        <h6>Upload Return Series (CSV)</h6>
+                    </a></td></tr>
+                    <tr style="border-top-style: hidden;"><td colspan="2">
+                        <div class="collapse" id="csvform">
+                            {{ form.as_p }}
+                        </div>
+                    </td></tr>
+                    {% else %}
+                    <tr><td><a class="link-primary" data-bs-toggle="collapse" href="#a{{ form.id.value }}" role="button" aria-expanded="false" aria-controls="collapseExample">
+                        <h6>{{ form.name.value }}</h6>
+                    </a></td></tr>
+                    <tr style="border-top-style: hidden;"><td colspan="2">
+                        <div class="collapse" id="a{{ form.id.value }}">
+                            {{ form.as_p }}
+                        </div>
+                    </td></tr>
+                    {% endif %}
+                    {% endfor %}
+                </table>
+                <button type="submit" class="btn btn-outline-teal">Save Changes</button>
+        </form>
         </div>
     </div>
 {% endblock %}

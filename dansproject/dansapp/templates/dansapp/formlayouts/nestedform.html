@@ -3,6 +3,10 @@
         {% include "dansapp/formlayouts/metaform.html" with form=form %}
     </div>
 
+    <div class="col-lg-3">
+        <table class="table table-hover"><tbody id="csv_block"></tbody></table>
+    </div>
+
     {% for form in formset %}
     
     <div class="col-lg-3 portfolio_form">
@@ -15,7 +19,7 @@
     </div>
 </div>    
 {% if user.is_authenticated %}
-<select style="width: auto;" class="form-select" aria-label="Default select example", id="select_portfolio" onchange="addForm(event.target.value)">
+<select style="width: auto; float: left; margin-right: 5px;" class="form-select" aria-label="Default select example", id="select_portfolio" onchange="addForm(event.target.value)">
     <option disabled selected value="default">Saved Portfolios</option>
     {% for portfolio in saved %}
         <option value="{{ portfolio }}">{{ portfolio }}</option>
@@ -23,7 +27,15 @@
         <option style="width: 0px;">No saved portfolios! Head to your account page to get started.</option>
     {% endfor %}
 </select>
-<br>
+<select style="width: auto; float: left;" class="form-select" aria-label="Default select example", id="select_csv" onchange="addForm(event.target.value, csv=true)">
+    <option disabled selected value="default">Saved CSVs</option>
+    {% for portfolio in saved_csvs %}
+        <option value="{{ portfolio }}">{{ portfolio }}</option>
+    {% empty %}
+        <option style="width: 0px;">No saved CSVs! Head to your account page to get started.</option>
+    {% endfor %}
+</select>
+<br><br>
 {% endif %}
 <button type="submit" class="btn btn-outline-teal">Submit</button>
 <button type="button" class="btn btn-outline-primary" id="add_form" onclick="addForm(event.target.id)">Add Additional Portfolio</button>

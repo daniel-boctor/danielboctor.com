@@ -39,7 +39,7 @@
 
     <form action="{% url 'backtest' %}" method="POST" id="form_container">
     {% csrf_token %}{{ formset.management_form }}
-    {% include "dansapp/formlayouts/nestedform.html" with form=form formset=formset tickerform=tickerform saved=saved %}
+    {% include "dansapp/formlayouts/nestedform.html" with form=form formset=formset tickerform=tickerform saved=saved saved_csvs=saved_csvs %}
     </form>
 
     {% if range %}
@@ -58,16 +58,16 @@
         <label class="form-check-label" for="toggle_advanced">Toggle Advanced Stats</label>
     </div>
 
-    <div class="table-responsive">
+    <div class="table-responsive" id="basic">
         {{ key_stats | safe }}
+    </div>
+
+    <div class="table-responsive" id="advanced" style="display: none;">
+        {{ summary_stats | safe }}
     </div>
 
     <div class="table-responsive">
         {{ horserace | safe }}
-    </div>
-    
-    <div class="table-responsive" id="advanced" style="display: none;">
-        {{ summary_stats | safe }}
     </div>
 
     <div class="graph">

@@ -1,5 +1,5 @@
 from django import forms
-from .models import User, Portfolio
+from .models import User, Portfolio, RetsCSV
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.forms import BaseFormSet
@@ -72,8 +72,8 @@ class MetaForm(forms.Form):
         datestamp_end = cleaned_data.get("datestamp_end")
         if datestamp_start and datestamp_end:
             # Only do something if both fields are valid so far.
-            if datestamp_start >= datestamp_end:
-                raise ValidationError("Start date was greater than or equal to end date.")
+            if datestamp_start > datestamp_end:
+                raise ValidationError("Start date was greater than the end date.")
 
 class TickerForm(forms.Form):
     ticker1 = forms.CharField(max_length=8, widget=forms.TextInput(attrs={'class':'form-control', 'placeholder':'Ticker'}))
@@ -136,3 +136,11 @@ class BasePortfolioFormSet(BaseFormSet):
             if not form.cleaned_data["name"]:
                 form.cleaned_data["name"] = f"Portfolio {count}"
             count += 1
+
+class RetsCSVForm(forms.ModelForm):
+    class Meta:
+        model = RetsCSV
+        exclude = ('user',)
+        widgets = {
+            'name': forms.TextInput(attrs={'class':'form-control', 'placeholder':'Portfolio name'}),
+        }

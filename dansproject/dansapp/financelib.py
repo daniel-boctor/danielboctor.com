@@ -1,3 +1,4 @@
+from .models import RetsCSV
 from django.contrib import messages
 from pandas_datareader import data as pdr
 import yfinance as yf
@@ -37,59 +38,87 @@ def generate_return_series(tickers, start=None, end=None, granularity="1mo", nam
         
     return securities
 
-def create_master_dataframe(request, form, formset, tickerform):
+def create_master_dataframe(request, form, formset, tickerform, csvs):
     if form.cleaned_data["type"] == "formset_block":
         master_dataframe = []
-        if formset.is_valid():
-            for f in formset:
-                if f.cleaned_data:
-                    ticker = []
-                    weight = []
-                    for k, v in f.cleaned_data.items():
-                        if v:
-                            if "name" in k:
-                                name = v
-                            if "ticker" in k:
-                                ticker.append(v)
-                            if "weight" in k:
-                                weight.append(v)
-                    master_dataframe.append([name, ticker, weight])
-        if not formset.is_valid():
-            return False
-        #dataframe of valid tickers, errors returned for invalid
-        tmp_portfolio_list = []
-        for portfolio in master_dataframe:
-            master_dataframe = generate_return_series(portfolio[1], name=portfolio[0], weights=portfolio[2], start=form.cleaned_data["datestamp_start"], end=form.cleaned_data["datestamp_end"], granularity=form.cleaned_data["granularity"])        
+        if formset.data["form-0-ticker1"]:
+            if formset.is_valid():
+                for f in formset:
+                    if f.cleaned_data:
+                        ticker = []
+                        weight = []
+                        for k, v in f.cleaned_data.items():
+                            if v:
+                                if "name" in k:
+                                    name = v
+                                if "ticker" in k:
+                                    ticker.append(v)
+                                if "weight" in k:
+                                    weight.append(v)
+                        master_dataframe.append([name, ticker, weight])
+            if not formset.is_valid():
+                return False
+            #dataframe of valid tickers, errors returned for invalid
+            tmp_portfolio_list = []
+            for portfolio in master_dataframe:
+                master_dataframe = generate_return_series(portfolio[1], name=portfolio[0], weights=portfolio[2], start=form.cleaned_data["datestamp_start"], end=form.cleaned_data["datestamp_end"], granularity=form.cleaned_data["granularity"])        
+                if not isinstance(master_dataframe, pd.DataFrame):
+                    for error in master_dataframe:
+                        messages.error(request, f"Invalid ticker entered: {error}", extra_tags="Error!")
+                    return False
+                tmp_portfolio_list.append(master_dataframe)
+            master_dataframe = pd.concat(tmp_portfolio_list, axis=1).dropna()
+        variable = "Portfolio"
+
+    if form.cleaned_data["type"] == "tickerform_block":
+        if tickerform.data["ticker1"]:
+            if not tickerform.is_valid():
+                return False
+            #list of available tickers
+            tickers = []
+            for value in tickerform.cleaned_data.values():
+                if value:
+                    tickers.append(value)
+            #dataframe of valid tickers, errors returned for invalid
+            master_dataframe = generate_return_series(tickers, start=form.cleaned_data["datestamp_start"], end=form.cleaned_data["datestamp_end"], granularity=form.cleaned_data["granularity"])        
             if not isinstance(master_dataframe, pd.DataFrame):
                 for error in master_dataframe:
                     messages.error(request, f"Invalid ticker entered: {error}", extra_tags="Error!")
                 return False
-            tmp_portfolio_list.append(master_dataframe)
-        master_dataframe = pd.concat(tmp_portfolio_list, axis=1).dropna()
-        variable = "Portfolio"
-
-    if form.cleaned_data["type"] == "tickerform_block":
-        if not tickerform.is_valid():
-            return False
-        #list of available tickers
-        tickers = []
-        for value in tickerform.cleaned_data.values():
-            if value:
-                tickers.append(value)
-        #dataframe of valid tickers, errors returned for invalid
-        master_dataframe = generate_return_series(tickers, start=form.cleaned_data["datestamp_start"], end=form.cleaned_data["datestamp_end"], granularity=form.cleaned_data["granularity"])        
-        if not isinstance(master_dataframe, pd.DataFrame):
-            for error in master_dataframe:
-                messages.error(request, f"Invalid ticker entered: {error}", extra_tags="Error!")
-            return False
         variable = "Security"
+    
+    if csvs:
+        if isinstance(master_dataframe, list):
+            master_dataframe = pd.DataFrame()
+
+        for csv in csvs:
+            if csv:
+                tmp = RetsCSV.objects.filter(user=request.user, name=csv)
+                if not tmp.exists():
+                    messages.error(request, f"{csv} does not exit", extra_tags="Error!")
+                    return False
+                rets = pd.read_csv(tmp[0].return_series,
+                        header=0, index_col=0, parse_dates=True)
+                #rets = rets/100
+                if str(rets.index[0])[8:9] == str(rets.index[1])[8:9] and form.cleaned_data["granularity"]=="1d":
+                    messages.error(request, f"Granularity between CSV and live data are not the same.", extra_tags="Error!")
+                    return False
+                if str(rets.index[0])[8:9] != str(rets.index[1])[8:9] and form.cleaned_data["granularity"]=="1mo":
+                    messages.error(request, f"Granularity between CSV and live data are not the same.", extra_tags="Error!")
+                    return False
+                if form.cleaned_data["granularity"] == "1d":
+                    rets.index = rets.index.to_period('D')
+                if form.cleaned_data["granularity"] == "1mo":
+                    rets.index = rets.index.to_period('M')
+                master_dataframe = pd.concat([master_dataframe, rets], axis=1).dropna()
+                master_dataframe = master_dataframe[form.cleaned_data["datestamp_start"]:form.cleaned_data["datestamp_end"]]
 
     #no errors   
     if form.cleaned_data["granularity"] == "1mo":
         periods_per_year = 12
     elif form.cleaned_data["granularity"] == "1d":
         periods_per_year = 253
-
+    
     return master_dataframe, periods_per_year, variable
 
 
@@ -181,14 +210,18 @@ def summary_stats(r, riskfree_rate=0, periods_per_year=12):
     kurt = r.aggregate(kurtosis)
     cf_var5 = r.aggregate(var_gaussian, modified=True)
     hist_cvar5 = r.aggregate(cvar_historic)
+    dd = r.aggregate(only_drawdown)
     return pd.DataFrame({
         "Annualized Return": round(ann_r*100, 2).astype(str) + "%",
         "Annualized Vol": round(ann_vol*100, 2).astype(str) + "%",
+        "Max Drawdown": round(dd.min()*100, 2).astype(str) + "%",
+        "Max Drawdown Date": dd.idxmin(),
+        "Current Drawdown": round(dd.iloc[-1]*100, 2).astype(str) + "%",
         "Skewness": round(skew, 2),
         "Kurtosis": round(kurt, 2),
         "Cornish-Fisher VaR (5% level)": round(cf_var5*100, 2).astype(str) + "%",
         "Historic CVaR (5% level)": round(hist_cvar5*100, 2).astype(str) + "%",
-        "Sharpe Ratio (raw)": round(ann_sr, 2),
+        "Sharpe Ratio (raw)": round(ann_sr, 2)
     })
 
 def only_drawdown(rets):
@@ -196,19 +229,6 @@ def only_drawdown(rets):
     previous_peaks = wealth_index.cummax()
     drawdowns = (wealth_index - previous_peaks)/previous_peaks
     return drawdowns
-
-def key_stats(rets, periods_per_year=12):
-    key_stats = pd.DataFrame(index=(rets.columns))
-
-    returns = annualize_rets(rets, periods_per_year=periods_per_year)
-    vol = annualize_vol(rets, periods_per_year=periods_per_year)
-    drawdown = only_drawdown(rets).min()
-
-    key_stats["Annualized Return"] = round(returns * 100, 2).astype(str) + "%"
-    key_stats["Annualized Vol"] = round(vol * 100, 2).astype(str) + "%"
-    key_stats["Max Drawdown"] = round(drawdown * 100, 2).astype(str) + "%"
-
-    return key_stats
 
 def horserace(rets, wealth=10000):
     horserace = pd.DataFrame(index=(rets.columns))
