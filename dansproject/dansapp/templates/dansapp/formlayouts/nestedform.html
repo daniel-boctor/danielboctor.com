@@ -19,24 +19,27 @@
     </div>
 </div>    
 {% if user.is_authenticated %}
-<select style="width: auto; float: left; margin-right: 5px;" class="form-select" aria-label="Default select example", id="select_portfolio" onchange="addForm(event.target.value)">
-    <option disabled selected value="default">Saved Portfolios</option>
-    {% for portfolio in saved %}
-        <option value="{{ portfolio }}">{{ portfolio }}</option>
-    {% empty %}
-        <option style="width: 0px;">No saved portfolios! Head to your account page to get started.</option>
-    {% endfor %}
-</select>
-<select style="width: auto; float: left;" class="form-select" aria-label="Default select example", id="select_csv" onchange="addForm(event.target.value, csv=true)">
-    <option disabled selected value="default">Saved CSVs</option>
-    {% for portfolio in saved_csvs %}
-        <option value="{{ portfolio }}">{{ portfolio }}</option>
-    {% empty %}
-        <option style="width: 0px;">No saved CSVs! Head to your account page to get started.</option>
-    {% endfor %}
-</select>
-<br><br>
+<div class="row">
+    <div class="col">
+        <select style="width: auto; float: left; margin-right: 5px; margin-top: 5px;" class="form-select" aria-label="Default select example", id="select_portfolio" onchange="addForm(event.target.value)">
+            <option disabled selected value="default">Saved Portfolios</option>
+            {% for portfolio in saved %}
+                <option style="width: 0px;" value="{{ portfolio }}">{{ portfolio }}</option>
+            {% empty %}
+                <option style="width: 0px;">No saved portfolios! Head to your account page to get started.</option>
+            {% endfor %}
+        </select>
+        <select style="width: auto; float: left; margin-top: 5px;" class="form-select" aria-label="Default select example", id="select_csv" onchange="addForm(event.target.value, csv=true)">
+            <option disabled selected value="default">Saved CSVs</option>
+            {% for portfolio in saved_csvs %}
+                <option style="width: 0px;" value="{{ portfolio }}">{{ portfolio }}</option>
+            {% empty %}
+                <option style="width: 0px;">No saved CSVs! Head to your account page to get started.</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
 {% endif %}
-<button type="submit" class="btn btn-outline-teal">Submit</button>
-<button type="button" class="btn btn-outline-primary" id="add_form" onclick="addForm(event.target.id)">Add Additional Portfolio</button>
-<button type="button" class="btn btn-outline-danger" id="remove_form" style="display: none;" onclick="addForm(event.target.id)">Remove Portfolio</button>
+<button style="margin-top: 5px;" type="submit" class="btn btn-outline-teal">Submit</button>
+<button style="margin-top: 5px;" type="button" class="btn btn-outline-primary" id="add_form" onclick="addForm(event.target.id)">Add Additional Portfolio</button>
+<button style="margin-top: 5px;" type="button" class="btn btn-outline-danger" id="remove_form" style="display: none;" onclick="addForm(event.target.id)">Remove Portfolio</button>
