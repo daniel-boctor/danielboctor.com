@@ -4,11 +4,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.formset_block = document.querySelector(".portfolio_form")
     window.tickerform_block = document.querySelector("#tickerform_block")
+    addForm("");
     document.getElementById('id_type').addEventListener("change", () => toggle_type(event.target.value));
     toggle_type(document.getElementById('id_type').value);
     document.querySelector('#id_form-0-ticker1').setAttribute('required', '');
     document.querySelector('#id_form-0-weight1').setAttribute('required', '');
-    addForm("")
 });
 function toggle_type(type) {
     let meta_block = document.querySelector(".meta_form")
@@ -69,6 +69,7 @@ function addForm(event, csv=false) {
         if (csv == true) {
             document.querySelector('#select_csv').value = 'default'
             if (event != "No saved CSVs! Head to your account page to get started.") {
+                document.querySelector('.csv_parent_block').style.display = 'block';
                 csv_num = document.querySelectorAll('.csv_input').length + 1
                 document.querySelector('#csv_block').insertAdjacentHTML('beforeend', `<tr><td>Saved CSV - ${csv_num}</td><td><input name="csv-${csv_num}" class="form-control csv_input" id="csv-${csv_num}"></td></tr>`);
                 document.querySelector(`#csv-${csv_num}`).setAttribute('value', event)

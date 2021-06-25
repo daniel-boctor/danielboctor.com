@@ -201,7 +201,6 @@ def backtest(request):
     summary = summary_stats(master_dataframe, periods_per_year=periods_per_year) 
     key = summary[["Annualized Return", "Annualized Vol", "Max Drawdown"]]
     horse = horserace(master_dataframe, wealth=form.cleaned_data["initial_wealth"]) 
-    print(master_dataframe)
     return render(request, "dansapp/backtest.html", {
         "form": form,
         "formset": formset,
