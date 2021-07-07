@@ -11,7 +11,6 @@ from django.forms import modelformset_factory
 import pandas as pd
 from pandas_datareader import data as pdr
 from .financelib import *
-import inspect
 
 pd.options.plotting.backend = "plotly"
 
