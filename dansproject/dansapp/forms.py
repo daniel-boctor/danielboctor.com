@@ -41,16 +41,14 @@ class MetaForm(forms.Form):
     datestamp_end = forms.DateField(label="End date", required=False, widget=forms.DateInput(attrs={'class':'form-control', 'type':'month', 'placeholder':'YYYY-MM'}))
 
     def __init__(self, *args, **kwargs):
-        wealth = kwargs.pop('wealth', None)
-        rolling = kwargs.pop('rolling', None)
-        factors = kwargs.pop('factors', None)
+        template = kwargs.pop('template', None)
         super(MetaForm, self).__init__(*args, **kwargs)
-        if wealth:
+        if template == "backtest":
             self.fields['initial_wealth'] = forms.IntegerField(required=False, validators=[MinValueValidator(1), MaxValueValidator(1000000000)], widget=forms.TextInput(attrs={'class':'form-control', 'placeholder': '10,000'}))
-        if rolling:
+        if template == "rolling":
             roll_period = (('12', '1 Year'), ('36', '3 Years'), ('60', '5 Years'), ('84', '7 Years'), ('120', '10 Years'))
             self.fields['roll_window'] = forms.ChoiceField(choices=roll_period, initial="12", widget=forms.Select(attrs={'class':'form-select'}))
-        if factors:
+        if template == "factors":
             factor_model = (
                 ('F-F_Research_Data_Factors', 'FF US 3 Factor Model'),
                 ('F-F_Research_Data_5_Factors_2x3', 'FF US 5 Factor Model'),

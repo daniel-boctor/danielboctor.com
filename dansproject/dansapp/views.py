@@ -11,6 +11,7 @@ from django.forms import modelformset_factory
 import pandas as pd
 from pandas_datareader import data as pdr
 from .financelib import *
+import inspect
 
 pd.options.plotting.backend = "plotly"
 
@@ -134,7 +135,7 @@ def portfolio_api(request, name):
         return JsonResponse({"error": "POST request required."}, status=400)
     return JsonResponse({k: v for k, v in Portfolio.objects.filter(user=request.user, name=name).values()[0].items() if v is not None and not k in ["id", "user_id"]})
 
-def backtest(request):
+def prep_data(request, template):
     PortfolioFormSet = modelformset_factory(Portfolio, form=PortfolioForm, formset=BasePortfolioFormSet, extra=1, max_num=5, absolute_max=5)
     saved = []
     saved_csvs = []
@@ -142,8 +143,8 @@ def backtest(request):
         saved = Portfolio.objects.filter(user=request.user).values_list("name", flat=True)
         saved_csvs = RetsCSV.objects.filter(user=request.user).values_list("name", flat=True)
     if request.method == "GET":
-        return render(request, "dansapp/backtest.html", {
-            "form": MetaForm(wealth=True),
+        return render(request, f"dansapp/{template}.html", {
+            "form": MetaForm(template=template),
             "formset": PortfolioFormSet(),
             "tickerform": TickerForm,
             "saved": saved,
@@ -163,17 +164,15 @@ def backtest(request):
                 updated_request.update({'datestamp_start': updated_request["datestamp_start"] + "-01"})
             if updated_request["datestamp_end"]:
                 updated_request.update({'datestamp_end': updated_request["datestamp_end"] + "-01"})
-        form = MetaForm(updated_request, wealth=True)
+        form = MetaForm(updated_request, template=template)
         if not form.is_valid():
-            return render(request, "dansapp/backtest.html", {
+            return render(request, f"dansapp/{template}.html", {
                 "form": form,
                 "formset": formset,
                 "tickerform": tickerform,
                 "saved": saved,
                 "saved_csvs": saved_csvs
             })
-        if not form.cleaned_data["initial_wealth"]:
-            form.cleaned_data["initial_wealth"] = 10000
         
         csvs = {v for k, v in updated_request.items() if 'csv' in k}
         return_vals = create_master_dataframe(request, form, formset, tickerform, csvs)
@@ -186,6 +185,14 @@ def backtest(request):
             "saved_csvs": saved_csvs
         })
         master_dataframe, periods_per_year, variable = return_vals
+        return master_dataframe, periods_per_year, variable, form, formset, tickerform, saved, saved_csvs
+
+def backtest(request):
+    if request.method == "GET":
+        return prep_data(request, "backtest")
+    master_dataframe, periods_per_year, variable, form, formset, tickerform, saved, saved_csvs = prep_data(request, "backtest")
+    if not form.cleaned_data["initial_wealth"]:
+        form.cleaned_data["initial_wealth"] = 10000
 
     #PLOTTING AND STATS
     graph = form.cleaned_data["initial_wealth"]*(master_dataframe+1).cumprod()
@@ -215,192 +222,100 @@ def backtest(request):
     })
 
 def rolling(request):
-    PortfolioFormSet = modelformset_factory(Portfolio, form=PortfolioForm, formset=BasePortfolioFormSet, extra=1, max_num=5, absolute_max=5)
-    saved = []
-    saved_csvs = []
-    if request.user.is_authenticated:
-        saved = Portfolio.objects.filter(user=request.user).values_list("name", flat=True)
-        saved_csvs = RetsCSV.objects.filter(user=request.user).values_list("name", flat=True)
     if request.method == "GET":
-        return render(request, "dansapp/rolling.html", {
-            "form": MetaForm(rolling=True),
-            "formset": PortfolioFormSet(),
-            "tickerform": TickerForm,
-            "saved": saved,
-            "saved_csvs": saved_csvs
-    })
+        return prep_data(request, "rolling")
+    master_dataframe, periods_per_year, variable, form, formset, tickerform, saved, saved_csvs = prep_data(request, "rolling")
+    if periods_per_year == 12:
+        roll_window = int(form.cleaned_data["roll_window"])
+    else:
+        roll_window = (int(form.cleaned_data["roll_window"]) // 12) * 253
 
-    if request.method == "POST":
-        formset = PortfolioFormSet(request.POST)
-        if request.POST["type"] == "tickerform_block":
-            tickerform = TickerForm(request.POST)
-        else:
-            tickerform = TickerForm
-        #append a "-01" onto the datestamp if granularity == 1mo
-        updated_request = request.POST.copy()
-        if updated_request["granularity"] == "1mo":
-            if updated_request["datestamp_start"]:
-                updated_request.update({'datestamp_start': updated_request["datestamp_start"] + "-01"})
-            if updated_request["datestamp_end"]:
-                updated_request.update({'datestamp_end': updated_request["datestamp_end"] + "-01"})
-        form = MetaForm(updated_request, rolling=True)
-        if not form.is_valid():
-            return render(request, "dansapp/rolling.html", {
-                "form": form,
-                "formset": formset,
-                "tickerform": tickerform,
-                "saved": saved,
-                "saved_csvs": saved_csvs
-            })
-
-        csvs = {v for k, v in updated_request.items() if 'csv' in k}
-        return_vals = create_master_dataframe(request, form, formset, tickerform, csvs)
-        if not return_vals:
-            return render(request, "dansapp/rolling.html", {
-                "form": form,
-                "formset": formset,
-                "tickerform": tickerform,
-                "saved": saved,
-                "saved_csvs": saved_csvs
-            })
-        master_dataframe, periods_per_year, variable = return_vals
-        if periods_per_year == 12:
-            roll_window = int(form.cleaned_data["roll_window"])
-        else:
-            roll_window = (int(form.cleaned_data["roll_window"]) // 12) * 253
-
-        #PLOTTING AND STATS
-        rolling = rolling_rets(master_dataframe, roll_window=roll_window, periods_per_year=periods_per_year)
-        if not isinstance(rolling, pd.DataFrame):
-            messages.error(request, f"Not enough data available for the selected roll window ({roll_window} {'Months' if periods_per_year==12 else 'Days'}).", extra_tags="Error!")
-            return render(request, "dansapp/rolling.html", {
-                "form": form,
-                "formset": formset,
-                "tickerform": tickerform,
-                "saved": saved,
-                "saved_csvs": saved_csvs
-            })
-        stats = rolling_stats(rolling)
-
-        rolling.index = rolling.index.astype(str)
-        fig = rolling.plot(template="simple_white", labels=dict(index="Date", value="Annualized Return", variable=variable))
-        fig.update_layout(legend=dict(y=0.99 ,x=0.01), 
-            legend_title_text = variable,
-            margin = dict(l=0, r=20),
-            hovermode = "x unified",
-            title = f"Annualized Rolling Returns ({roll_window} {'Months' if periods_per_year==12 else 'Days'})"
-        )
-        graph = fig.to_html(full_html=False, include_plotlyjs="cdn")
-        range = sample_date_range(master_dataframe)
+    #PLOTTING AND STATS
+    rolling = rolling_rets(master_dataframe, roll_window=roll_window, periods_per_year=periods_per_year)
+    if not isinstance(rolling, pd.DataFrame):
+        messages.error(request, f"Not enough data available for the selected roll window ({roll_window} {'Months' if periods_per_year==12 else 'Days'}).", extra_tags="Error!")
         return render(request, "dansapp/rolling.html", {
             "form": form,
             "formset": formset,
             "tickerform": tickerform,
             "saved": saved,
-            "saved_csvs": saved_csvs,
-            "range": range,
-            "stats": stats.to_html(classes=["table table-hover table-fit"], border=0,  justify="unset"),
-            "graph": graph
-        })
-
-def factors(request):
-    PortfolioFormSet = modelformset_factory(Portfolio, form=PortfolioForm, formset=BasePortfolioFormSet, extra=1, max_num=5, absolute_max=5)
-    saved = []
-    saved_csvs = []
-    if request.user.is_authenticated:
-        saved = Portfolio.objects.filter(user=request.user).values_list("name", flat=True)
-        saved_csvs = RetsCSV.objects.filter(user=request.user).values_list("name", flat=True)
-    if request.method == "GET":
-        return render(request, "dansapp/factors.html", {
-            "form": MetaForm(factors=True),
-            "formset": PortfolioFormSet(),
-            "tickerform": TickerForm,
-            "saved": saved,
             "saved_csvs": saved_csvs
+        })
+    stats = rolling_stats(rolling)
+
+    rolling.index = rolling.index.astype(str)
+    fig = rolling.plot(template="simple_white", labels=dict(index="Date", value="Annualized Return", variable=variable))
+    fig.update_layout(legend=dict(y=0.99 ,x=0.01), 
+        legend_title_text = variable,
+        margin = dict(l=0, r=20),
+        hovermode = "x unified",
+        title = f"Annualized Rolling Returns ({roll_window} {'Months' if periods_per_year==12 else 'Days'})"
+    )
+    graph = fig.to_html(full_html=False, include_plotlyjs="cdn")
+    range = sample_date_range(master_dataframe)
+    return render(request, "dansapp/rolling.html", {
+        "form": form,
+        "formset": formset,
+        "tickerform": tickerform,
+        "saved": saved,
+        "saved_csvs": saved_csvs,
+        "range": range,
+        "stats": stats.to_html(classes=["table table-hover table-fit"], border=0,  justify="unset"),
+        "graph": graph
     })
 
-    if request.method == "POST":
-        formset = PortfolioFormSet(request.POST)
-        if request.POST["type"] == "tickerform_block":
-            tickerform = TickerForm(request.POST)
+def factors(request):
+    if request.method == "GET":
+        return prep_data(request, "factors")
+    master_dataframe, periods_per_year, variable, form, formset, tickerform, saved, saved_csvs = prep_data(request, "factors")
+
+    #PLOTTING AND STATS
+    factor_model = pdr.DataReader(form.cleaned_data["factor_model"], 'famafrench', start="1926")[0]/100
+    factor_num = "5" if "5" in form.cleaned_data['factor_model'] else "3"
+    geo = "Developed" if "Developed" in form.cleaned_data['factor_model'] else "US"
+    if "Emerging" in form.cleaned_data['factor_model']:
+        geo = "Emerging"
+    range = sample_date_range(master_dataframe)
+    if factor_model.shape[1] == 1:
+        if geo == "Developed":
+            five_factor = "Developed_5_Factors"
+        elif geo == "Emerging":
+            five_factor = "Emerging_5_Factors"
         else:
-            tickerform = TickerForm
-        #append a "-01" onto the datestamp if granularity == 1mo
-        updated_request = request.POST.copy()
-        if updated_request["granularity"] == "1mo":
-            if updated_request["datestamp_start"]:
-                updated_request.update({'datestamp_start': updated_request["datestamp_start"] + "-01"})
-            if updated_request["datestamp_end"]:
-                updated_request.update({'datestamp_end': updated_request["datestamp_end"] + "-01"})
-        form = MetaForm(updated_request, factors=True)
-        if not form.is_valid():
-            return render(request, "dansapp/factors.html", {
-                "form": form,
-                "formset": formset,
-                "tickerform": tickerform,
-                "saved": saved,
-                "saved_csvs": saved_csvs
-            })
+            five_factor = "F-F_Research_Data_5_Factors_2x3"
+        factor_num = "5 + Mom"
+        mom = factor_model
+        factor_model = pdr.DataReader(five_factor, 'famafrench', start="1926")[0]/100
+        mom = mom[factor_model.index.values[0]:factor_model.index.values[-1]]
+        factor_model = factor_model[mom.index.values[0]:mom.index.values[-1]]
+        factor_model.insert(loc=5, column="Mom", value=mom[mom.columns.values[0]])
 
-        csvs = {v for k, v in updated_request.items() if 'csv' in k}
-        return_vals = create_master_dataframe(request, form, formset, tickerform, csvs)
-        if not return_vals:
-            return render(request, "dansapp/factors.html", {
-                "form": form,
-                "formset": formset,
-                "tickerform": tickerform,
-                "saved": saved,
-                "saved_csvs": saved_csvs
-            })
-        master_dataframe, periods_per_year, variable = return_vals
-
-        #PLOTTING AND STATS
-        factor_model = pdr.DataReader(form.cleaned_data["factor_model"], 'famafrench', start="1926")[0]/100
-        factor_num = "5" if "5" in form.cleaned_data['factor_model'] else "3"
-        geo = "Developed" if "Developed" in form.cleaned_data['factor_model'] else "US"
-        if "Emerging" in form.cleaned_data['factor_model']:
-            geo = "Emerging"
-        range = sample_date_range(master_dataframe)
-        if factor_model.shape[1] == 1:
-            if geo == "Developed":
-                five_factor = "Developed_5_Factors"
-            elif geo == "Emerging":
-                five_factor = "Emerging_5_Factors"
-            else:
-                five_factor = "F-F_Research_Data_5_Factors_2x3"
-            factor_num = "5 + Mom"
-            mom = factor_model
-            factor_model = pdr.DataReader(five_factor, 'famafrench', start="1926")[0]/100
-            mom = mom[factor_model.index.values[0]:factor_model.index.values[-1]]
-            factor_model = factor_model[mom.index.values[0]:mom.index.values[-1]]
-            factor_model.insert(loc=5, column="Mom", value=mom[mom.columns.values[0]])
-
-        title = f"Fama French {geo} {factor_num} Factor Regression"
-        factor_loadings = factor_regression(master_dataframe, factor_model)
-        
-        graphs = None
-        if form.cleaned_data['rolling_regression'] != "False":
-            graphs = []
-            for col in master_dataframe:
-                rolling = rolling_regression(pd.DataFrame(master_dataframe[col]), factor_model, roll_window=int(form.cleaned_data['rolling_regression']))
-                if not isinstance(rolling, pd.DataFrame):
-                    messages.error(request, f"Not enough data available for the selected roll window ({form.cleaned_data['rolling_regression']} {'Months' if periods_per_year==12 else 'Days'}).", extra_tags="Error!")
-                    return render(request, "dansapp/factors.html", {
-                        "form": form,
-                        "formset": formset,
-                        "tickerform": tickerform,
-                        "saved": saved,
-                        "saved_csvs": saved_csvs
-                    })
-                rolling.index = rolling.index.astype(str)
-                fig = rolling.plot(template="simple_white", labels=dict(index="Date", value="Factor Loading", variable=variable))
-                fig.update_layout(legend=dict(y=0.99 ,x=0.01), 
-                    legend_title_text = variable,
-                    margin = dict(l=0, r=20),
-                    #hovermode = "x unified",
-                    title = f"Rolling Factor Loadings ({form.cleaned_data['rolling_regression']} Months) on {col}"
-                )
-                graphs.append(fig.to_html(full_html=False, include_plotlyjs="cdn"))
+    title = f"Fama French {geo} {factor_num} Factor Regression"
+    factor_loadings = factor_regression(master_dataframe, factor_model)
+    
+    graphs = None
+    if form.cleaned_data['rolling_regression'] != "False":
+        graphs = []
+        for col in master_dataframe:
+            rolling = rolling_regression(pd.DataFrame(master_dataframe[col]), factor_model, roll_window=int(form.cleaned_data['rolling_regression']))
+            if not isinstance(rolling, pd.DataFrame):
+                messages.error(request, f"Not enough data available for the selected roll window ({form.cleaned_data['rolling_regression']} {'Months' if periods_per_year==12 else 'Days'}).", extra_tags="Error!")
+                return render(request, "dansapp/factors.html", {
+                    "form": form,
+                    "formset": formset,
+                    "tickerform": tickerform,
+                    "saved": saved,
+                    "saved_csvs": saved_csvs
+                })
+            rolling.index = rolling.index.astype(str)
+            fig = rolling.plot(template="simple_white", labels=dict(index="Date", value="Factor Loading", variable=variable))
+            fig.update_layout(legend=dict(y=0.99 ,x=0.01), 
+                legend_title_text = variable,
+                margin = dict(l=0, r=20),
+                #hovermode = "x unified",
+                title = f"Rolling Factor Loadings ({form.cleaned_data['rolling_regression']} Months) on {col}"
+            )
+            graphs.append(fig.to_html(full_html=False, include_plotlyjs="cdn"))
 
 
         return render(request, "dansapp/factors.html", {

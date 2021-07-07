@@ -1,8 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     document.querySelectorAll('.nav-link').forEach(function(nav_link) {
-        if (nav_link.getAttribute("href") === window.location.pathname) {
-            //nav_link.setAttribute("class", "nav-link active");
+        if (window.location.pathname.includes(nav_link.getAttribute("href"))) {
             nav_link.className += " active";
             nav_link.setAttribute("aria-current", "page");
             nav_link.style.textDecoration = "underline"; 

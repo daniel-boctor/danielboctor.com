@@ -225,7 +225,7 @@ def summary_stats(r, riskfree_rate=0, periods_per_year=12):
     })
 
 def only_drawdown(rets):
-    wealth_index = (1+rets).cumprod()
+    wealth_index = pd.concat([pd.Series([1]), (1+rets).cumprod()])
     previous_peaks = wealth_index.cummax()
     drawdowns = (wealth_index - previous_peaks)/previous_peaks
     return drawdowns
