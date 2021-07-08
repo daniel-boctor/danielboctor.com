@@ -1,6 +1,6 @@
 from django.shortcuts import redirect, render
 from django.contrib import messages
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
@@ -187,9 +187,10 @@ def prep_data(request, template):
         return master_dataframe, periods_per_year, variable, form, formset, tickerform, saved, saved_csvs
 
 def backtest(request):
-    if request.method == "GET":
-        return prep_data(request, "backtest")
-    master_dataframe, periods_per_year, variable, form, formset, tickerform, saved, saved_csvs = prep_data(request, "backtest")
+    tmp = prep_data(request, "backtest")
+    if type(tmp) == HttpResponse:
+        return tmp
+    master_dataframe, periods_per_year, variable, form, formset, tickerform, saved, saved_csvs = tmp
     if not form.cleaned_data["initial_wealth"]:
         form.cleaned_data["initial_wealth"] = 10000
 
@@ -221,9 +222,10 @@ def backtest(request):
     })
 
 def rolling(request):
-    if request.method == "GET":
-        return prep_data(request, "rolling")
-    master_dataframe, periods_per_year, variable, form, formset, tickerform, saved, saved_csvs = prep_data(request, "rolling")
+    tmp = prep_data(request, "rolling")
+    if type(tmp) == HttpResponse:
+        return tmp
+    master_dataframe, periods_per_year, variable, form, formset, tickerform, saved, saved_csvs = tmp
     if periods_per_year == 12:
         roll_window = int(form.cleaned_data["roll_window"])
     else:
@@ -264,9 +266,10 @@ def rolling(request):
     })
 
 def factors(request):
-    if request.method == "GET":
-        return prep_data(request, "factors")
-    master_dataframe, periods_per_year, variable, form, formset, tickerform, saved, saved_csvs = prep_data(request, "factors")
+    tmp = prep_data(request, "factors")
+    if type(tmp) == HttpResponse:
+        return tmp
+    master_dataframe, periods_per_year, variable, form, formset, tickerform, saved, saved_csvs = tmp
 
     #PLOTTING AND STATS
     factor_model = pdr.DataReader(form.cleaned_data["factor_model"], 'famafrench', start="1926")[0]/100
