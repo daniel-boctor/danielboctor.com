@@ -44,3 +44,27 @@ def classify(model, pixels):
     confidence = classification[0][classification.argmax()]
     classification = classification.argmax()
     return classification, confidence
+
+def convert_model_to_tflite(saved_model_dir):
+    converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_dir)
+    tflite_model = converter.convert()
+
+    with open('model.tflite', 'wb') as f:
+        f.write(tflite_model)
+
+def classify_with_tf_lite(model, pixels):
+    interpreter = tf.lite.Interpreter(model_path=model)
+    interpreter.allocate_tensors()
+
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+
+    input_data = [np.array(pixels, dtype=np.float32).reshape(1, 28, 28, 1)][0]
+    interpreter.set_tensor(input_details[0]['index'], input_data)
+
+    interpreter.invoke()
+    
+    output_data = interpreter.get_tensor(output_details[0]['index'])
+    confidence = output_data[0][output_data.argmax()]
+    classification = output_data.argmax()
+    return classification, confidence

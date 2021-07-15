@@ -3,7 +3,7 @@ from django.http import JsonResponse
 import json, ast
 from .tictactoe_AI.tictactoe import *
 from .nim_AI.nim import NimAI
-from .neuralnets_AI.mnist import classify
+from .neuralnets_AI.mnist import classify, classify_with_tf_lite
 import os
 
 # Create your views here.
@@ -74,6 +74,8 @@ def neural_nets_api(request, width):
     for _ in range(width):
         nd_pixels.append([pixels.pop(0)/255.0 for _ in range(width)])
     file = os.path.join(os.path.join(os.path.dirname(os.path.abspath(__file__)), "neuralnets_AI"), f"{'model'}.h5")
+    # FOR TFLITE
+    #file = os.path.join(os.path.join(os.path.dirname(os.path.abspath(__file__)), "neuralnets_AI"), f"{'model'}.tflite")
     image = deepcopy(nd_pixels)
     for i in range(width):
         for j in range(width):
@@ -86,4 +88,6 @@ def neural_nets_api(request, width):
                 if i + 1 < width and j + 1 < width:
                     image[i + 1][j + 1] = max((190 / 255), nd_pixels[i + 1][j + 1])
     classification, confidence = classify(file, image)
+    # FOR TFLITE
+    #classification, confidence = classify_with_tf_lite(file, image)
     return JsonResponse({"classification": f"{classification}", "confidence": f"{round(confidence*100, 6)}%"})
