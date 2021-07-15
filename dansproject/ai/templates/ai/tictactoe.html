@@ -1,0 +1,189 @@
+{% extends "dansapp/layout.html" %}
+{% load static %}
+
+{% block title %}Tictactoe{% endblock %}
+
+{% block script %}
+    <script>
+        var board = [[null, null, null], [null, null, null], [null, null, null]];
+        var training = 50000;
+        var algorithm = "Q";
+        var player = "X";
+        var current_player = "human";
+        var new_game = true;
+        var end_game = false;
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.move').forEach(e => e.addEventListener("click", () => make_move(e.parentNode.id)));
+            document.querySelector('.AI').addEventListener("click", AI_start);
+            document.querySelector('.restart').addEventListener("click", restart_game);
+            document.querySelector('#algorithm').addEventListener("change", () => change_algorithm(event.target.value));
+            document.querySelector('#algorithm').value = algorithm;
+            document.querySelector('#training').addEventListener("change", () => change_training(event.target.value));
+            document.querySelector('#training').value = training;
+        });
+        function restart_game() {
+            if (end_game === true) {document.querySelector('#alert').childNodes[0].remove()}
+            board = [[null, null, null], [null, null, null], [null, null, null]];
+            new_game = true;
+            end_game = false;
+            player = "X";
+            current_player = "human";
+            document.querySelector('.AI').style.display = 'block';
+            document.querySelectorAll('.move').forEach(e => e.src = "{% static 'ai/None.png' %}");
+            document.querySelectorAll('.move').forEach(e => e.addEventListener("click", () => make_move(e.parentNode.id)));
+        }
+        function AI_start() {
+            player = "O";
+            current_player = "ai";
+            make_move("start")
+        }
+        function make_move(id) {
+            if (end_game === true) {return}
+            if (new_game === true) {document.querySelector('.AI').style.display = 'none'; new_game = false}
+            if (id != "start") {
+                if (current_player != "human") {return}
+                if (player === "X") {document.getElementById(`${id}`).innerHTML = `<img src="{% static 'ai/X.png' %}" class="move">`}
+                else {document.getElementById(`${id}`).innerHTML = `<img src="{% static 'ai/O.png' %}" class="move">`}
+                var id = id.split(",");
+                board[parseInt(id[0])][parseInt(id[1])] = player;
+                current_player = "ai";
+            }
+            fetch(`/ai/tictactoe_api/${algorithm}/${training}`, {
+                method: 'POST',
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                mode: "same-origin",
+                body: JSON.stringify({
+                    state: board
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (Object.keys(result).includes("move")) {
+                    board[result["move"][0]][result["move"][1]] = result["player"]
+                    if (player === "X") {document.getElementById(`${result["move"]}`).innerHTML = `<img src="{% static 'ai/O.png' %}" class="move">`}
+                    else {document.getElementById(`${result["move"]}`).innerHTML = `<img src="{% static 'ai/X.png' %}" class="move">`}
+                }
+                if (Object.keys(result).includes("won")) {
+                    if (result["won"] === null) {document.getElementById("alert").innerHTML = '<div class="alert alert-secondary" role="alert">Draw!</div>'}
+                    else if (result["won"] === player) {document.getElementById("alert").innerHTML = '<div class="alert alert-success" role="alert">You Won!</div>'}
+                    else {document.getElementById("alert").innerHTML = '<div class="alert alert-danger" role="alert">AI Won!</div>'}
+                    end_game = true;
+                }
+                current_player = "human";
+            });
+        }
+        function change_algorithm(value) {
+            algorithm = value;
+            if (value === "Q") {
+                document.querySelector("#training").disabled = false;
+            } else {
+                document.querySelector("#training").setAttribute('disabled', '');
+            }
+        }
+        function change_training(value) {
+            training = parseInt(value);
+        }
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+{% endblock %}
+
+{% block body %}
+    <h1>Tictactoe</h1>
+
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="accordion" id="accordionExample">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            More Info
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            <ul>
+                            <li><strong>AI Algorithm:</strong> This is where you can change the AI Algorithm that will play against you.</li>
+                            <li><strong># Training Rounds:</strong> If a machine learning algorithm is selected, you will be able to select the number of training rounds the AI plays against itself. 
+                                This is how the AI learns how to play the game. The more learning it does, the better it will become.</li>
+                            <li><strong>Let AI Start:</strong> This will let the AI have the first move.</li>
+                            <li><strong>New Game:</strong> This will completely reset the game.</li>
+                            </ul>
+                            How it works: The AI is ran on the server only.
+                                When you make a move, your move is sent to the server asynchronously, and the AI's move will be delivered back to the player.
+                                All machine learning is done in advance. You are welcome to change training rounds, and even the algorithm, mid-way through a game!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br>
+
+    <div class="row">
+        <div class="col-lg-3">
+            <label for="algorithm">Select AI Algorithm</label>
+            <select class="form-select" id="algorithm">
+                <option value="Q" selected>Q-learning (machine learning)</option>
+                <option value="M">Minimax</option>
+            </select>
+        </div>
+        <div class="col-lg-2">
+            <label for="training">Select # training rounds</label>
+            <select class="form-select" id="training">
+                <option value="100">100</option>
+                <option value="1000">1000</option>
+                <option value="10000">10000</option>
+                <option value="50000" selected>50000</option>
+                <option value="100000">100000</option>
+            </select>
+        </div>
+        <div class="col-lg-2 AI">
+            <label></label>
+            <button type="button" class="btn btn-danger" style="width: 100%;">Let AI Start</button>
+        </div>
+        <div class="col-lg-2" style="margin-bottom: 10px;">
+            <label></label>
+            <button type="button" class="btn btn-primary restart" style="width: 100%;">New Game</button>
+        </div>
+    </div>
+
+    <div id="alert"></div>
+
+    <div class="row" style="margin: 10px;">
+        <div class="col-lg-3 offset-lg-4">
+            <table class="table table-bordered board">
+                <tr class="row ttt_row">
+                    <td class="col ttt_cell" id="0,0"><img class="move" src="{% static 'ai/None.png' %}"></td>
+                    <td class="col ttt_cell" id="0,1"><img class="move" src="{% static 'ai/None.png' %}"></td>
+                    <td class="col ttt_cell" id="0,2"><img class="move" src="{% static 'ai/None.png' %}"></td>
+                </tr>
+                <tr class="row ttt_row">
+                    <td class="col ttt_cell" id="1,0"><img class="move" src="{% static 'ai/None.png' %}"></td>
+                    <td class="col ttt_cell" id="1,1"><img class="move" src="{% static 'ai/None.png' %}"></td>
+                    <td class="col ttt_cell" id="1,2"><img class="move" src="{% static 'ai/None.png' %}"></td>
+                </tr>
+                <tr class="row ttt_row">
+                    <td class="col ttt_cell" id="2,0"><img class="move" src="{% static 'ai/None.png' %}"></td>
+                    <td class="col ttt_cell" id="2,1"><img class="move" src="{% static 'ai/None.png' %}"></td>
+                    <td class="col ttt_cell" id="2,2"><img class="move" src="{% static 'ai/None.png' %}"></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+{% endblock %}

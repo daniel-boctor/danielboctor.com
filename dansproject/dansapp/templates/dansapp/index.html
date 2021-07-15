@@ -5,34 +5,70 @@
 
 {% block body %}
     <h1>Home</h1>
+
+    <h4><u>Finance</u></h4>
     <div class="row">
-        <div class="col-xxl-2">
+        <div class="col-lg-auto" style="margin-bottom: 10px;">
             <div class="card h-100" style="width: 18rem;">
                 <a href="{% url 'backtest' %}"><img src="{% static 'dansapp/backtest.png' %}" class="card-img-top"></a>
                 <div class="card-body d-flex flex-column">
                 <h5 class="card-title">Backtest</h5>
                 <p class="card-text">Backtest securities and portfolios.</p>
-                <a href="{% url 'backtest' %}" class="btn btn-primary mt-auto">Backtest</a>
+                <a href="{% url 'backtest' %}" class="btn btn-teal mt-auto">Backtest</a>
                 </div>
             </div>
         </div>
-        <div class="col-xxl-2">
+        <div class="col-lg-auto" style="margin-bottom: 10px;">
             <div class="card h-100" style="width: 18rem;">
                 <a href="{% url 'rolling' %}"><img src="{% static 'dansapp/rolling.png' %}" class="card-img-top"></a>
                 <div class="card-body d-flex flex-column">
                 <h5 class="card-title">Rolling Returns</h5>
                 <p class="card-text">Test different rolling windows.</p>
-                <a href="{% url 'rolling' %}" class="btn btn-primary mt-auto">Rolling Returns</a>
+                <a href="{% url 'rolling' %}" class="btn btn-teal mt-auto">Rolling Returns</a>
                 </div>
             </div>
         </div>
-        <div class="col-xxl-2">
+        <div class="col-lg-auto" style="margin-bottom: 10px;">
             <div class="card h-100" style="width: 18rem;">
                 <a href="{% url 'factors' %}"><img src="{% static 'dansapp/factors.png' %}" class="card-img-top"></a>
                 <div class="card-body d-flex flex-column">
                 <h5 class="card-title">Factor Regressions</h5>
                 <p class="card-text">Regress returns against factor models.</p>
-                <a href="{% url 'factors' %}" class="btn btn-primary mt-auto">Factor Regressions</a>
+                <a href="{% url 'factors' %}" class="btn btn-teal mt-auto">Factor Regressions</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4><u>Artificial Intelligence / Machine Learning</u></h4>
+    <div class="row">
+        <div class="col-lg-auto" style="margin-bottom: 10px;">
+            <div class="card h-100" style="width: 18rem;">
+                <a href="{% url 'tictactoe' %}"><img src="{% static 'ai/tictactoe.png' %}" class="card-img-top"></a>
+                <div class="card-body d-flex flex-column">
+                <h5 class="card-title">Tictactoe</h5>
+                <p class="card-text">Play tictactoe against various AI and ML algorithms.</p>
+                <a href="{% url 'tictactoe' %}" class="btn btn-danger mt-auto">Tictactoe</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-auto" style="margin-bottom: 10px;">
+            <div class="card h-100" style="width: 18rem;">
+                <a href="{% url 'nim' %}"><img src="{% static 'ai/nim.png' %}" class="card-img-top"></a>
+                <div class="card-body d-flex flex-column">
+                <h5 class="card-title">Nim</h5>
+                <p class="card-text">Play nim against various AI and ML algorithms.</p>
+                <a href="{% url 'nim' %}" class="btn btn-danger mt-auto">Nim</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-auto" style="margin-bottom: 10px;">
+            <div class="card h-100" style="width: 18rem;">
+                <a href="{% url 'neural-nets' %}"><img src="{% static 'ai/neural-nets.png' %}" class="card-img-top"></a>
+                <div class="card-body d-flex flex-column">
+                <h5 class="card-title">Neural Networks</h5>
+                <p class="card-text">Test out various neural network implementations.</p>
+                <a href="{% url 'neural-nets' %}" class="btn btn-danger mt-auto">Neural Networks</a>
                 </div>
             </div>
         </div>

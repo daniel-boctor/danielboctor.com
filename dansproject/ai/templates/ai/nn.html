@@ -1,0 +1,202 @@
+{% extends "dansapp/layout.html" %}
+{% load static %}
+
+{% block title %}Neural Networks{% endblock %}
+
+{% block script %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            globalThis.canvas = document.getElementById("canvas");
+            globalThis.ctx = canvas.getContext("2d");
+            globalThis.canvas_clone = document.getElementById("canvas_clone");
+            globalThis.ctx_clone = canvas_clone.getContext("2d");
+            globalThis.canvas2 = document.getElementById("canvas2");
+            globalThis.ctx2 = canvas2.getContext("2d");
+            globalThis.pos = { x: 0, y: 0 };
+            window.addEventListener('resize', resize);
+            window.addEventListener('scroll', resize);
+            document.addEventListener('mousemove', draw);
+            document.addEventListener('mousedown', setPosition);
+            document.addEventListener('mouseenter', setPosition);
+            canvas.addEventListener("touchstart", startPosition);
+            canvas.addEventListener("touchend", endPosition);
+            canvas.addEventListener("touchmove", draw_mobile);
+            resize();
+
+            let painting = false;
+            function startPosition(e) {
+                painting = true;
+                draw_mobile(e);
+            }
+            function endPosition() {
+                painting = false;
+                ctx.beginPath();
+                load_cache();
+            }
+            function draw_mobile(e) {
+                if (!painting) {
+                return;
+                }
+
+                e.preventDefault();
+                ctx.lineWidth = 10;
+                ctx.lineCap = "round";
+            
+                if (e.type == 'touchmove'){
+                ctx.lineTo(e.touches[0].clientX-getOffset().left+window.scrollX, e.touches[0].clientY-getOffset().top+window.scrollY);
+                }
+                
+                ctx.stroke();
+                ctx.strokeStyle = "black";
+                ctx.beginPath();
+                
+                if (e.type == 'touchmove'){
+                ctx.moveTo(e.touches[0].clientX-getOffset().left+window.scrollX, e.touches[0].clientY-getOffset().top+window.scrollY);
+                }
+            }
+        });
+
+        function load_cache() {
+            ctx_clone.canvas.width = ctx.canvas.width;
+            ctx_clone.canvas.height = ctx.canvas.height;
+            ctx_clone.drawImage(canvas, 0, 0, ctx_clone.canvas.width, ctx_clone.canvas.width);
+        }
+
+        function getOffset() {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                left: rect.left + window.scrollX,
+                top: rect.top + window.scrollY
+            };
+        }
+
+        function setPosition(e) {
+        pos.x = e.pageX - canvas.offsetLeft;
+        pos.y = e.pageY - canvas.offsetTop;
+        }
+
+        function draw(e) {
+        if (e.buttons !== 1) return;
+
+        ctx.beginPath();
+
+        ctx.lineWidth = 10;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = 'black';
+
+        ctx.moveTo(pos.x, pos.y);
+        setPosition(e);
+        ctx.lineTo(pos.x, pos.y);
+
+        ctx.stroke();
+        load_cache();
+        }
+            
+        function resize() {
+            canvas.style.height = canvas.offsetWidth;
+            ctx.canvas.width = canvas.offsetWidth;
+            ctx.canvas.height = canvas.offsetWidth;
+            ctx.drawImage(canvas_clone, 0, 0, ctx.canvas.width, ctx.canvas.width);
+        }
+        function erase() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx2.clearRect(0, 0, canvas2.width, canvas2.width);
+            ctx_clone.clearRect(0, 0, ctx_clone.canvas.width , ctx_clone.canvas.width);
+            document.querySelector("#classification").innerHTML = "";
+            document.querySelector("#confidence").innerHTML = "";
+        }
+        function done() {
+            ctx2.clearRect(0, 0, canvas2.width, canvas2.width);
+            ctx2.drawImage(canvas, 0, 0, canvas2.width, canvas2.height);
+            var pixels = Array.prototype.slice.call(ctx2.getImageData(0, 0, canvas2.height, canvas2.height).data);
+            var i = pixels.length;
+            while (i--) {
+                if ((i + 1) % 4 != 0) {pixels.splice(i, 1)}
+            }
+            fetch(`/ai/neural-nets_api/${canvas2.width}`, {
+                method: 'POST',
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                mode: "same-origin",
+                body: JSON.stringify({
+                    pixels: pixels
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                document.querySelector("#classification").innerHTML = `<h4>${result["classification"]}</h4>`
+                document.querySelector("#confidence").innerHTML = `<h4>${result["confidence"]}</h4>`
+            });
+        }
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+{% endblock %}
+
+{% block body %}
+    <h1>Neural Networks: Computer Vision</h1>
+
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="accordion" id="accordionExample">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            More Info
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            An artificial neural network is a network or circuit of artificial neurons, that is created for the purpose of recognizing underlying relationships in a set of data through a process that mimics the way the human brain operates.
+                            Neural Networks are incredibly vast in their usecases. In this example, a deep sequential neural network was trained using supervised machine learning to be able to classify numbers written by humans.
+                            <br><br>
+                            <strong>How it works:</strong> All you need to do is draw a single number (0 through 9) in the box. The neural network will then attempt to classify the number you drew, and will provide a confidence level that its classification is correct.
+                            For the best results, be sure to center your number, and draw it large enough so that it takes up the majority of the box.
+                            <br><br>
+                            At the moment, number recognition is the only tool available. This page will be expanded upon, and more tools will be made available in the future.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br>
+
+    <div class="row" style="margin: 10px;">
+        <div class="col-md-2 offset-md-4" style="text-align:center;">
+            <button type="button" class="btn btn-success" onclick="done()" style="margin-bottom: 5px;">Done</button>
+            <button type="button" class="btn btn-danger" onclick="erase()" style="margin-bottom: 5px;">Clear</button>
+            <canvas id="canvas" style="border: solid; border-color: black; width: 100%">Your browser does not support the HTML5 canvas tag.</canvas>
+        </div>
+        <canvas id="canvas_clone" style="display: none; width: 100%;">Your browser does not support the HTML5 canvas tag.</canvas>
+        <canvas id="canvas2" width="28" height="28" style="display: none; width: 100%;">Your browser does not support the HTML5 canvas tag.</canvas>
+        <div class="col-md-auto">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <tr>
+                        <td><h4><b>Classification</b></h4></td>
+                        <td id="classification"></td>
+                    </tr>
+                    <tr>
+                        <td><h4><b>Confidence</b></h4></td>
+                        <td id="confidence"></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

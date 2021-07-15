@@ -1,0 +1,193 @@
+{% extends "dansapp/layout.html" %}
+{% load static %}
+
+{% block title %}Tictactoe{% endblock %}
+
+{% block script %}
+    <script>
+        var board = [1, 3, 5, 7];
+        var training = 10000;
+        var algorithm = "Q";
+        var new_game = true;
+        var end_game = false;
+        var player = "human";
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('.AI').addEventListener("click", () => AI_start());
+            document.querySelector('.restart').addEventListener("click", restart_game);
+            document.querySelector('#algorithm').addEventListener("change", () => change_algorithm(event.target.value));
+            document.querySelector('#algorithm').value = algorithm;
+            document.querySelector('#training').addEventListener("change", () => change_training(event.target.value));
+            document.querySelector('#training').value = training;
+            build_board();
+        });
+        function AI_start() {
+            player = "ai"
+            make_move("start")
+        }
+        function restart_game() {
+            if (end_game === true) {document.querySelector('#alert').childNodes[0].remove()}
+            board = [1, 3, 5, 7];
+            player = "human";
+            new_game = true;
+            end_game = false;
+            document.querySelector('.AI').style.display = 'block';
+            build_board();
+        }
+        function make_move(action) {
+            if (end_game === true) {return}
+            if (new_game === true) {document.querySelector('.AI').style.display = 'none'; new_game = false}
+            if (action != "start") {
+                var row = action.split(",")[0]
+                var action = action.split(",")[1]
+                document.querySelector(`#select-${row}`).value = 'default'
+                    if (player != "human") {return}
+                board[row] -= action;
+                build_board();
+                player = "ai";
+            }
+            fetch(`/ai/nim_api/${algorithm}/${training}`, {
+                method: 'POST',
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                mode: "same-origin",
+                body: JSON.stringify({
+                    state: board
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (Object.keys(result).includes("state")) {
+                    board = result["state"];
+                    build_board();
+                }
+                if (Object.keys(result).includes("won")) {
+                    if (result["won"] === "ai") {document.getElementById("alert").innerHTML = '<div class="alert alert-danger" role="alert">AI Won!</div>'}
+                    else {document.getElementById("alert").innerHTML = '<div class="alert alert-success" role="alert">You Won!</div>'}
+                    end_game = true;
+                }
+                player = "human";
+            });
+        }
+        function change_algorithm(value) {
+            algorithm = value;
+            if (value === "Q") {
+                document.querySelector("#training").disabled = false;
+            } else {
+                document.querySelector("#training").setAttribute('disabled', '');
+            }
+        }
+        function change_training(value) {
+            training = parseInt(value);
+        }
+        function build_board() {
+            table = document.querySelector(".table")
+            table.innerHTML = ""
+            for (row = 0; row < 4; row++) {
+                var new_row = table.insertRow(row);
+                for (cell = 0; cell < 7; cell++) {
+                    new_cell = new_row.insertCell(cell);
+                    if (cell < ((7 - board[row]) / 2)) {new_cell.innerHTML = `<img class="move" src="{% static 'ai/blank.png' %}">`}
+                    else if (cell < ((7 - board[row]) / 2) + board[row]) {new_cell.innerHTML = `<img class="move" src="{% static 'ai/matchstick.png' %}">`}
+                    else {new_cell.innerHTML = `<img class="move" src="{% static 'ai/blank.png' %}">`}
+                }
+                new_cell = new_row.insertCell(cell);
+                new_cell.innerHTML = `<label for="${row}">Row ${row+1}</label><select class="form-select action" id="select-${row}"></select>`
+                document.querySelector(`#select-${row}`).addEventListener("change", () => make_move(event.target.value));
+                document.querySelector(`#select-${row}`).insertAdjacentHTML('beforeend', `<option disabled selected value="default"></option>`);
+                for (num = 1; num <= board[row]; num++) {
+                    document.querySelector(`#select-${row}`).insertAdjacentHTML('beforeend', `<option value="${row},${num}">${num}</option>`);
+                }
+            }
+        }
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+{% endblock %}
+
+{% block body %}
+    <h1>Nim</h1>
+
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="accordion" id="accordionExample">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            More Info
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+                        <div class="accordion-body">
+                            Nim is an adversarial game in which two players take turns removing objects from four distinct piles. 
+                                On each turn, a player must remove some number of objects from a single pile. The goal of the game is to have your
+                                opponent take the last object from the game board. 
+                            <br><br>
+                            <ul>
+                            <li><strong>AI Algorithm:</strong> This is where you can change the AI Algorithm that will play against you. Q-learning is the only algorithm available for Nim at the moment.</li>
+                            <li><strong># Training Rounds:</strong> If a machine learning algorithm is selected, you will be able to select the number of training rounds the AI plays against itself. 
+                                This is how the AI learns how to play the game. The more learning it does, the better it will become.</li>
+                            <li><strong>Let AI Start:</strong> This will let the AI have the first move.</li>
+                            <li><strong>New Game:</strong> This will completely reset the game.</li>
+                            </ul>
+                            How it works: The AI is ran on the server only.
+                                When you make a move, your move is sent to the server asynchronously, and the AI's move will be delivered back to the player.
+                                All machine learning is done in advance. You are welcome to change training rounds, and even the algorithm, mid-way through a game!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br>
+
+    <div class="row">
+        <div class="col-md-3">
+            <label for="algorithm">Select AI Algorithm</label>
+            <select class="form-select" id="algorithm">
+                <option value="Q" selected>Q-learning (machine learning)</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label for="training">Select # training rounds</label>
+            <select class="form-select" id="training">
+                <option value="100">100</option>
+                <option value="1000">1000</option>
+                <option value="5000">5000</option>
+                <option value="10000" selected>10000</option>
+                <option value="25000">25000</option>
+                <option value="50000">50000</option>
+            </select>
+        </div>
+        <div class="col-md-2 AI">
+            <label></label>
+            <button type="button" class="btn btn-danger" style="width: 100%;">Let AI Start</button>
+        </div>
+        <div class="col-md-2" style="margin-bottom: 10px;">
+            <label></label>
+            <button type="button" class="btn btn-primary restart" style="width: 100%;">New Game</button>
+        </div>
+    </div>
+
+    <div id="alert"></div>
+
+    <div class="row">
+        <div class="col-md-4 offset-md-4">
+            <table class="table">
+            </table>
+        </div>
+    </div>
+{% endblock %}

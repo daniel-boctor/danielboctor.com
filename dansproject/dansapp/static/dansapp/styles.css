@@ -24,3 +24,16 @@
     padding-top: 30px;
     margin-bottom: -30px;
 }
+
+.move {
+    width: 100%;
+}
+
+.board {
+	position: relative;
+	width: 100%;		/* desired width */
+}
+.board:before {
+	content: "";
+	padding-top: 100%; 	/* initial ratio of 1:1*/
+}

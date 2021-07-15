@@ -320,14 +320,14 @@ def factors(request):
             graphs.append(fig.to_html(full_html=False, include_plotlyjs="cdn"))
 
 
-        return render(request, "dansapp/factors.html", {
-            "form": form,
-            "formset": formset,
-            "tickerform": tickerform,
-            "saved": saved,
-            "saved_csvs": saved_csvs,
-            "range": range,
-            "title": title,
-            "stats": factor_loadings.to_html(classes=["table table-hover table-fit"], border=0,  justify="unset"),
-            "graphs": graphs
-        })
+    return render(request, "dansapp/factors.html", {
+        "form": form,
+        "formset": formset,
+        "tickerform": tickerform,
+        "saved": saved,
+        "saved_csvs": saved_csvs,
+        "range": range,
+        "title": title,
+        "stats": factor_loadings.to_html(classes=["table table-hover table-fit"], border=0,  justify="unset"),
+        "graphs": graphs
+    })
