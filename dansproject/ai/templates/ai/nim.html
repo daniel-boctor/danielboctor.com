@@ -57,6 +57,7 @@
             })
             .then(response => response.json())
             .then(result => {
+                if (player != "ai") {return}
                 if (Object.keys(result).includes("state")) {
                     board = result["state"];
                     build_board();

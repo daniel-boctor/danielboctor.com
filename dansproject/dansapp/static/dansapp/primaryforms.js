@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.formset_block = document.querySelector(".portfolio_form")
     window.tickerform_block = document.querySelector("#tickerform_block")
-    addForm("");
     document.getElementById('id_type').addEventListener("change", () => toggle_type(event.target.value));
     toggle_type(document.getElementById('id_type').value);
     document.querySelector('#id_form-0-ticker1').setAttribute('required', '');
@@ -15,7 +14,7 @@ function toggle_type(type) {
     if (type === "formset_block") {
         document.querySelector("#tickerform_block").remove()
         meta_block.after(window.formset_block);
-        document.querySelector("#id_form-TOTAL_FORMS").setAttribute('value', `${1}`)
+        addForm("");
         document.querySelector("#add_form").style.display = 'inline-block';
         document.querySelector('#select_portfolio').style.display = 'block';
     }

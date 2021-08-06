@@ -60,6 +60,7 @@
             })
             .then(response => response.json())
             .then(result => {
+                if (current_player != "ai") {return}
                 if (Object.keys(result).includes("move")) {
                     board[result["move"][0]][result["move"][1]] = result["player"]
                     if (player === "X") {document.getElementById(`${result["move"]}`).innerHTML = `<img src="{% static 'ai/O.png' %}" class="move">`}
