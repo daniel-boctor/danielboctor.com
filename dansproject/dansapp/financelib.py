@@ -1,13 +1,14 @@
 from .models import RetsCSV
 from django.contrib import messages
-from pandas_datareader import data as pdr
 import yfinance as yf
 import pandas as pd
 import numpy as np
 from scipy.stats import norm
 import statsmodels.api as sm
+import pandas_datareader.data as web
+import datetime
 
-def generate_return_series(tickers, start=None, end=None, granularity="1mo", name=None, weights=None):
+def generate_return_series(tickers, start=None, end=None, granularity="1mo", cpi=False, fx=False, name=None, weights=None):
     securities = yf.download(tickers=tickers, interval=granularity)[["Adj Close"]]
     if len(securities.columns) == 1:
         securities.columns = tickers
@@ -28,6 +29,15 @@ def generate_return_series(tickers, start=None, end=None, granularity="1mo", nam
     #securities = securities.resample('M').apply(compound).to_period('M')
     securities = securities[start:end]
 
+    if cpi != "None":
+        securities = cpi_adjust(securities, granularity, cpi)
+        if not isinstance(securities, pd.DataFrame):
+            return securities
+    if fx != "None":
+        securities = fx_adjust(securities, granularity, fx)
+        if not isinstance(securities, pd.DataFrame):
+            return securities
+ 
     if name and weights:
         weights = pd.Series(weights, index=securities.columns)
         weights = weights / 100
@@ -37,6 +47,62 @@ def generate_return_series(tickers, start=None, end=None, granularity="1mo", nam
         return portfolio
         
     return securities
+
+def cpi_adjust(df, granularity, cpi):
+    #FRED US CPI CPALTT01USM657N
+    #FRED CANADA CPI CPALCY01CAM661N
+    start = datetime.datetime(1900, 1, 1)
+    if cpi == "CPALTT01USM657N":
+        cpi = web.DataReader(["CPALTT01USM657N"], 'fred', start).to_period('M')/100
+    elif cpi == "CPALCY01CAM661N":
+        cpi = web.DataReader(["CPALCY01CAM661N"], 'fred', start).to_period('M').pct_change().dropna()
+
+    df = df[str(cpi.index[0]):str(cpi.index[-1])]
+    if df.shape[0] == 0:
+        return f"Not enough data available for the selected sample. CPI data available from {cpi.index[0]} to {cpi.index[-1]}."
+    cpi = cpi[str(df.index[0]):str(df.index[-1])]
+
+    if granularity == "1d":
+        cpi_daily = pd.DataFrame(index=df.index)
+        cpi_daily["cpi"] = np.nan
+        for num, time in enumerate(cpi.index):
+            num_days = len(df.loc[str(time)])
+            cpi_daily.loc[str(time)] = (1+cpi.iloc[num].values[0])**(1/num_days)-1
+        cpi = cpi_daily
+    
+    df = (df+1).div((cpi+1).squeeze(), axis=0)-1
+    return df
+    
+
+def fx_adjust(df, granularity, fx_type):
+    #FRED CAD to 1 USD DEXCAUS
+    start = datetime.datetime(1900, 1, 1)
+    fx = web.DataReader(["DEXCAUS"], 'fred', start).pct_change().dropna()
+    fx = fx.resample('M').apply(compound).to_period('M')
+
+    df = df[str(fx.index[0]):str(fx.index[-1])]
+    if df.shape[0] == 0:
+        return f"Not enough data available for the selected sample. FX data available from {fx.index[0]} to {fx.index[-1]}."
+    fx = fx[str(df.index[0]):str(df.index[-1])]
+
+    if granularity == "1d":
+        fx_daily = pd.DataFrame(index=df.index)
+        fx_daily["fx"] = np.nan
+        for num, time in enumerate(fx.index):
+            num_days = len(df.loc[str(time)])
+            fx_daily.loc[str(time)] = (1+fx.iloc[num].values[0])**(1/num_days)-1
+        fx = fx_daily
+    
+    #CAD securities in USD terms
+    if fx_type == "usd":
+        for security in [security for security in df if security[-3:].lower() == ".to"]:
+            df[security] = (df[security]+1).div((fx+1).squeeze(), axis=0)-1
+    
+    #USD securities in CAD terms
+    if fx_type == "cad":
+        for security in [security for security in df if security[-3:].lower() != ".to"]:
+            df[security] = (df[security]+1).div((1/(fx+1)).squeeze(), axis=0)-1
+    return df
 
 def create_master_dataframe(request, form, formset, tickerform, csvs):
     if form.cleaned_data["type"] == "formset_block":
@@ -61,10 +127,13 @@ def create_master_dataframe(request, form, formset, tickerform, csvs):
             #dataframe of valid tickers, errors returned for invalid
             tmp_portfolio_list = []
             for portfolio in master_dataframe:
-                master_dataframe = generate_return_series(portfolio[1], name=portfolio[0], weights=portfolio[2], start=form.cleaned_data["datestamp_start"], end=form.cleaned_data["datestamp_end"], granularity=form.cleaned_data["granularity"])        
-                if not isinstance(master_dataframe, pd.DataFrame):
+                master_dataframe = generate_return_series(portfolio[1], name=portfolio[0], weights=portfolio[2], start=form.cleaned_data["datestamp_start"], end=form.cleaned_data["datestamp_end"], granularity=form.cleaned_data["granularity"], cpi=form.cleaned_data["inflation_adj"], fx=form.cleaned_data["currency_adj"])        
+                if isinstance(master_dataframe, list):
                     for error in master_dataframe:
                         messages.error(request, f"Invalid ticker entered: {error}", extra_tags="Error!")
+                    return False
+                if isinstance(master_dataframe, str):
+                    messages.error(request, master_dataframe, extra_tags="Error!")
                     return False
                 tmp_portfolio_list.append(master_dataframe)
             master_dataframe = pd.concat(tmp_portfolio_list, axis=1).dropna()
@@ -80,10 +149,13 @@ def create_master_dataframe(request, form, formset, tickerform, csvs):
                 if value:
                     tickers.append(value)
             #dataframe of valid tickers, errors returned for invalid
-            master_dataframe = generate_return_series(tickers, start=form.cleaned_data["datestamp_start"], end=form.cleaned_data["datestamp_end"], granularity=form.cleaned_data["granularity"])        
-            if not isinstance(master_dataframe, pd.DataFrame):
+            master_dataframe = generate_return_series(tickers, start=form.cleaned_data["datestamp_start"], end=form.cleaned_data["datestamp_end"], granularity=form.cleaned_data["granularity"], cpi=form.cleaned_data["inflation_adj"], fx=form.cleaned_data["currency_adj"])        
+            if isinstance(master_dataframe, list):
                 for error in master_dataframe:
                     messages.error(request, f"Invalid ticker entered: {error}", extra_tags="Error!")
+                return False
+            if isinstance(master_dataframe, str):
+                messages.error(request, master_dataframe, extra_tags="Error!")
                 return False
         variable = "Security"
     
@@ -110,6 +182,12 @@ def create_master_dataframe(request, form, formset, tickerform, csvs):
                     rets.index = rets.index.to_period('D')
                 if form.cleaned_data["granularity"] == "1mo":
                     rets.index = rets.index.to_period('M')
+
+                #if form.cleaned_data["inflation_adj"] != "None":
+                #    rets = cpi_adjust(rets, form.cleaned_data["granularity"], form.cleaned_data["inflation_adj"])
+                #if form.cleaned_data["currency_adj"] != "None":
+                #    rets = fx_adjust(rets, form.cleaned_data["granularity"], form.cleaned_data["currency_adj"])
+
                 master_dataframe = pd.concat([master_dataframe, rets], axis=1).dropna()
                 master_dataframe = master_dataframe[form.cleaned_data["datestamp_start"]:form.cleaned_data["datestamp_end"]]
 
@@ -241,7 +319,7 @@ def horserace(rets, wealth=10000):
 def rolling_rets(r, roll_window=36, periods_per_year=12):
     if r.shape[0] <= roll_window:
         return False
-    for asset in r:  
+    for asset in r:
         n_periods = r[[asset]].shape[0]
         windows = [(start, start+roll_window) for start in range(n_periods-roll_window)]
         if asset == r.columns[0]:

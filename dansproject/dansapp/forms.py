@@ -31,12 +31,24 @@ class MetaForm(forms.Form):
     ('1mo', 'Monthly'),
     ('1d', 'Daily')
     )
+    cpi_choices = (
+    ("None", 'Off'),
+    ('CPALTT01USM657N', 'US CPI'),
+    ('CPALCY01CAM661N', 'Canadian CPI')
+    )
+    fx_choices = (
+    ("None", 'Off'),
+    ('usd', 'USD Terms'),
+    ('cad', 'CAD Terms')
+    )
     portfolio_choices = (
     ('formset_block', 'Portfolios'),
     ('tickerform_block', 'Securities')
     )
     type = forms.ChoiceField(choices=portfolio_choices, initial="formset_block", widget=forms.Select(attrs={'class':'form-select'}))
     granularity = forms.ChoiceField(choices=granularity_choices, initial="1mo", widget=forms.Select(attrs={'class':'form-select'}))
+    inflation_adj = forms.ChoiceField(choices=cpi_choices, initial="None", widget=forms.Select(attrs={'class':'form-select'}))
+    currency_adj = forms.ChoiceField(choices=fx_choices, initial="None", widget=forms.Select(attrs={'class':'form-select'}))
     datestamp_start = forms.DateField(label="Start date", required=False, widget=forms.DateInput(attrs={'class':'form-control', 'type':'month', 'placeholder':'YYYY-MM'}))
     datestamp_end = forms.DateField(label="End date", required=False, widget=forms.DateInput(attrs={'class':'form-control', 'type':'month', 'placeholder':'YYYY-MM'}))
 
@@ -49,6 +61,8 @@ class MetaForm(forms.Form):
             roll_period = (('12', '1 Year'), ('36', '3 Years'), ('60', '5 Years'), ('84', '7 Years'), ('120', '10 Years'))
             self.fields['roll_window'] = forms.ChoiceField(choices=roll_period, initial="12", widget=forms.Select(attrs={'class':'form-select'}))
         if template == "factors":
+            self.fields.pop('inflation_adj')
+            self.fields.pop('currency_adj')
             factor_model = (
                 ('F-F_Research_Data_Factors', 'FF US 3 Factor Model'),
                 ('F-F_Research_Data_5_Factors_2x3', 'FF US 5 Factor Model'),
