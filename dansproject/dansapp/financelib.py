@@ -8,7 +8,7 @@ import statsmodels.api as sm
 import pandas_datareader.data as web
 import datetime
 
-def generate_return_series(tickers, start=None, end=None, granularity="1mo", cpi=False, fx=False, name=None, weights=None):
+def generate_return_series(tickers, start=None, end=None, granularity="1mo", cpi="None", fx="None", name=None, weights=None):
     securities = yf.download(tickers=tickers, interval=granularity)[["Adj Close"]]
     if len(securities.columns) == 1:
         securities.columns = tickers

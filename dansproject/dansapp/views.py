@@ -174,6 +174,10 @@ def prep_data(request, template):
             })
         
         csvs = {v for k, v in updated_request.items() if 'csv' in k}
+        if not "inflation_adj" in form.cleaned_data:
+            form.cleaned_data["inflation_adj"] = "None"
+        if not "currency_adj" in form.cleaned_data:
+            form.cleaned_data["currency_adj"] = "None"
         return_vals = create_master_dataframe(request, form, formset, tickerform, csvs)
         if not return_vals:
             return render(request, "dansapp/backtest.html", {
