@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
+    document.querySelector('#id_form-0-ticker1').setAttribute('required', '');
+    document.querySelector('#id_form-0-weight1').setAttribute('required', '');
+    
     document.getElementById('id_granularity').addEventListener("change", () => granularity_field(event.target.value));
     granularity_field(document.getElementById('id_granularity').value);
 
@@ -6,8 +9,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.tickerform_block = document.querySelector("#tickerform_block")
     document.getElementById('id_type').addEventListener("change", () => toggle_type(event.target.value));
     toggle_type(document.getElementById('id_type').value);
-    document.querySelector('#id_form-0-ticker1').setAttribute('required', '');
-    document.querySelector('#id_form-0-weight1').setAttribute('required', '');
 });
 function toggle_type(type) {
     let meta_block = document.querySelector(".meta_form")
