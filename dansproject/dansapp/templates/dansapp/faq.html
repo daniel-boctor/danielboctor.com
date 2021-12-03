@@ -3,23 +3,43 @@
 {% block title %}FAQ{% endblock %}
 
 {% block body %}
-    <h1>FAQ</h1>
 
-    <p><a class="link-dark faq" id="1" href="#1"><h5>I am seeing conflicts between this data and data on other sites (portfoliovisualizer, etc). How come?</a></h5></p>
-    It is not uncommon to see discrepancies in data between different sites. Our methodology is as follows.
-    All data used is inclusive of all dividends and distributions payed out during the sample.
-    In addition to this, if daily granularity is selected, the data will span the entire sample. This is from the first available close, right up until the most recent trading day, and will use the current intra-day price during market hours. 
-    It is also imporant to note that if multiple securities have different inception dates, the most recent one will be used for the entire sample.
+    <div class="row justify-content-md-center">
+        <div class="col-lg-6">
 
-    <p><a class="link-dark faq" id="2" href="#2"><h5>What's next?</a></h5></p>
-    Style analysis, dynamic weighting schemes, stochastic models, portfolio insurance, and machine learning models are all in the works.
+            <p><a class="text-teal faq" id="1" href="#1"><h5><b>About Me</b></a></h5></p>
+            My name is Daniel Boctor, and I'm currently a 2nd year undergraduate student pursuing a degree in Networking & IT Security at Ontario Tech University.<br>
+            My current interests include network engineering, software engineering, as well as AI and neural networks.<br>
 
-    <p><a class="link-dark faq" id="3" href="#3"><h5>Why are some tasks so slow?</a></h5></p>
-    At the moment, the entire website is being hosted on a raspberry pi. Because of this, a lot of tasks, especially neural networks, are very slow. I will be upgrading to a faster server sometime in a near future.
+            <p><a class="text-teal faq" id="2" href="#2"><h5><b>Contact Info</b></a></h5></p>
+            🚀 Personal website hosted @ <a href="https://danielboctor.com">danielboctor.com</a>
+            <br>
+            🧠 Undergraduate Research Assistant @ <a href="https://sain.ca/authors/daniel-boctor">SAIN Lab</a>
+            <br>
+            💻 Github profile: <a href="https://github.com/daniel-boctor">Github</a>
+            <br>
+            💬 If you would like to connect with me on LinkedIn: <a href="https://linkedin.com/in/daniel-boctor">Linkedin</a>
+            <br>
+            📭 If you would like to chat, shoot me an email: <a href="mailto:daniel.boctor@ontariotechu.net">daniel.boctor@ontariotechu.net</a>
+            <br>
 
-    <p><a class="link-dark faq" id="4" href="#4"><h5>Is this website open sourced?</a></h5></p>
-    Yes! You can find the source code <a href="https://github.com/daniel-boctor/danielboctor.com">here</a>.
+            <p><a class="text-teal faq" id="3" href="#3"><h5><b>Why are some tasks so slow?</b></a></h5></p>
+            At the moment, the entire website is being hosted on a raspberry pi. Because of this, a lot of tasks, especially neural networks, are very slow. I will be upgrading to a faster server sometime in a near future.
 
-    <p><a class="link-dark faq" id="5" href="#5"><h5>Contact</a></h5></p>
-    If you would like to contact me to report a bug, or to suggest a new feature, please email: <a href="mailto:dboctor18@gmail.com">dboctor18@gmail.com.</a>
+            <p><a class="text-teal faq" id="4" href="#4"><h5><b>Is this website open sourced?</b></a></h5></p>
+            Yes! You can find the source code <a href="https://github.com/daniel-boctor/danielboctor.com">here</a>.   
+
+            <p><a class="text-teal faq" id="5" href="#5"><h5><b>I am seeing conflicts between this data and data on other sites (portfoliovisualizer, etc). How come?</b></a></h5></p>
+            It is not uncommon to see discrepancies in data between different sites. Our methodology is as follows.
+            All data used is inclusive of all dividends and distributions payed out during the sample.
+            In addition to this, if daily granularity is selected, the data will span the entire sample. This is from the first available close, right up until the most recent trading day, and will use the current intra-day price during market hours. 
+            It is also imporant to note that if multiple securities have different inception dates, the most recent one will be used for the entire sample.
+
+            <p><a class="text-teal faq" id="6" href="#6"><h5><b>What's next?</b></a></h5></p>
+            For finance; style analysis, dynamic weighting schemes, stochastic modeling, portfolio insurance, and valuation models are all in the works.<br>
+            For AI, NLP based recurrent neural networks, as well as image based convolutional neural networks, are all in the works.
+    
+        </div>
+    </div>
+    
 {% endblock %}
