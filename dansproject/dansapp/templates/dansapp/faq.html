@@ -1,4 +1,5 @@
 {% extends "dansapp/layout.html" %}
+{% load static %}
 
 {% block title %}FAQ{% endblock %}
 
@@ -25,6 +26,19 @@
 
             <p><a class="text-teal faq" id="3" href="#3"><h5><b>Why are some tasks so slow?</b></a></h5></p>
             At the moment, the entire website is being hosted on a raspberry pi. Because of this, a lot of tasks, especially neural networks, are very slow. I will be upgrading to a faster server sometime in a near future.
+            <br>
+            <div class="row">
+                <div class="col-lg-4">
+                <img src="{% static 'dansapp/pi1.jpg' %}" class="image-res">
+                </div>
+                <div class="col-lg-4">
+                <img src="{% static 'dansapp/pi2.jpg' %}" class="image-res">
+                </div>
+                <div class="col-lg-4">
+                <img src="{% static 'dansapp/pi3.jpg' %}" class="image-res">
+                </div>
+                <small class="text-muted">Check out my 3D printed case.</small>
+            </div>
 
             <p><a class="text-teal faq" id="4" href="#4"><h5><b>Is this website open sourced?</b></a></h5></p>
             Yes! You can find the source code <a href="https://github.com/daniel-boctor/danielboctor.com">here</a>.   
@@ -37,7 +51,7 @@
 
             <p><a class="text-teal faq" id="6" href="#6"><h5><b>What's next?</b></a></h5></p>
             For finance; style analysis, dynamic weighting schemes, stochastic modeling, portfolio insurance, and valuation models are all in the works.<br>
-            For AI, NLP based recurrent neural networks, as well as image based convolutional neural networks, are all in the works.
+            For AI; NLP based recurrent neural networks, as well as image based convolutional neural networks, are all in the works.
     
         </div>
     </div>

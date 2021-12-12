@@ -25,6 +25,12 @@
     margin-bottom: -30px;
 }
 
+.image-res {
+    max-width: 100%;
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
+
 .move {
     width: 100%;
 }
