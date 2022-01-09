@@ -21,8 +21,7 @@ urlpatterns = [
     #finance routes
     path("backtest", views.backtest, name="backtest"),
     path("rolling", views.rolling, name="rolling"),
-    path("factors", views.factors, name="factors"),
-    path("norberts_gambit", views.norberts_gambit, name="norberts_gambit")
+    path("factors", views.factors, name="factors")
 ]
 
 from django.conf import settings

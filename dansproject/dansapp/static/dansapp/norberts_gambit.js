@@ -46,7 +46,7 @@ $(document).ready(function() {
         $.ajax({
             data: $(this).serialize(),
             type: 'POST',
-            url: 'norberts_gambit',
+            url: '',
             headers: {
                 'X-CSRFToken': getCookie("csrftoken")
             },
