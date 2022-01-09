@@ -156,3 +156,19 @@ class RetsCSVForm(forms.ModelForm):
         widgets = {
             'name': forms.TextInput(attrs={'class':'form-control', 'placeholder':'Portfolio name'}),
         }
+
+class NBForm(forms.Form):
+    DLR_TO = forms.DecimalField(decimal_places=4, min_value=0.01, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control'}))
+    DLR_U_TO = forms.DecimalField(decimal_places=4, min_value=0.01, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control'}))
+    buy_FX = forms.DecimalField(decimal_places=4, min_value=0.01, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control', 'placeholder':'1 USD = '}))
+    sell_FX = forms.DecimalField(decimal_places=4, min_value=0.01, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control', 'placeholder':'1 USD = '}))
+    initial = forms.DecimalField(decimal_places=2, min_value=0.01, widget=forms.TextInput(attrs={'class':'form-control', 'placeholder':'$10,000'}))
+    initial_fx = forms.ChoiceField(choices=(("CAD", "CAD"), ("USD", "USD")), initial="CAD", widget=forms.Select(attrs={'class':'form-select'}))
+    incur_buy_side_ecn = forms.BooleanField(required=False, initial=False, widget=forms.CheckboxInput(attrs={'class':'form-check-input'}))
+    incur_sell_side_ecn = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput(attrs={'class':'form-check-input'}))
+    buy_side_ecn = forms.DecimalField(decimal_places=4, initial=0.0035, min_value=0.00, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control'}))
+    sell_side_ecn = forms.DecimalField(decimal_places=4, initial=0.0035, min_value=0.00, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control'}))
+    buy_side_comm = forms.DecimalField(decimal_places=4, initial=0.00, min_value=0.00, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control'}))
+    sell_side_comm = forms.DecimalField(decimal_places=4, initial=0.01, min_value=0.00, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control'}))
+    lower_bound = forms.DecimalField(decimal_places=4, initial=4.95, min_value=0.00, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control'}))
+    upper_bound = forms.DecimalField(decimal_places=4, initial=9.95, min_value=0.00, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control'}))

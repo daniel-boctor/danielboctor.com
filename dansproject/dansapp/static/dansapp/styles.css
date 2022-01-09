@@ -16,13 +16,17 @@
     width: auto;
 }
 
+.table-fit-center {
+    width: auto;
+    margin: auto;
+}
+
 .graph {
     max-width: 1200px;
 }
 
 .faq {
-    padding-top: 30px;
-    margin-bottom: -30px;
+    scroll-margin-top: 40px;
 }
 
 .image-res {

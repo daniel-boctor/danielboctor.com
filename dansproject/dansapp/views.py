@@ -6,7 +6,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
 from .models import User, Portfolio, RetsCSV
 from django.contrib.auth.decorators import login_required
-from .forms import MyUserCreationForm, UserUpdateForm, MetaForm, PortfolioForm, TickerForm, BasePortfolioFormSet, RetsCSVForm
+from .forms import MyUserCreationForm, UserUpdateForm, MetaForm, PortfolioForm, TickerForm, BasePortfolioFormSet, RetsCSVForm, NBForm
 from django.forms import modelformset_factory
 import pandas as pd
 from pandas_datareader import data as pdr
@@ -335,3 +335,24 @@ def factors(request):
         "stats": factor_loadings.to_html(classes=["table table-hover table-fit"], border=0,  justify="unset"),
         "graphs": graphs
     })
+
+def norberts_gambit(request):
+    if request.method == "GET":
+        return render(request, "dansapp/norberts_gambit.html", {"form": NBForm})
+        
+    else:
+        form = NBForm(request.POST)
+        if form.is_valid():
+            params = {k: float(form.cleaned_data[k]) for k in list(form.cleaned_data)[6:]}
+            output_transactions, output_ECN, output_commissions, output_explicit_costs, output_total = \
+            norbits_gambit_cost_calc(params, float(form.cleaned_data["DLR_TO"]), float(form.cleaned_data["DLR_U_TO"]), form.cleaned_data["buy_FX"], form.cleaned_data["sell_FX"], float(form.cleaned_data["initial"]), form.cleaned_data["initial_fx"], form.cleaned_data["incur_buy_side_ecn"], form.cleaned_data["incur_sell_side_ecn"])
+
+            return JsonResponse({
+                "output_transactions": output_transactions.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
+                "output_ECN": output_ECN.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
+                "output_commissions": output_commissions.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
+                "output_costs": output_explicit_costs.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
+                "output_total": output_total.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
+            })
+        else:
+            return JsonResponse({"ERROR": form.errors})
