@@ -172,3 +172,4 @@ class NBForm(forms.Form):
     sell_side_comm = forms.DecimalField(decimal_places=4, initial=0.01, min_value=0.00, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control'}))
     lower_bound = forms.DecimalField(decimal_places=4, initial=4.95, min_value=0.00, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control'}))
     upper_bound = forms.DecimalField(decimal_places=4, initial=9.95, min_value=0.00, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control'}))
+    brokers_spread = forms.DecimalField(decimal_places=4, required=False, min_value=0.00, max_value=100, widget=forms.TextInput(attrs={'class':'form-control'}))

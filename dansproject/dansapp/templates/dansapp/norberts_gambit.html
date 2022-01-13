@@ -83,10 +83,10 @@
                         <div class="table-responsive">
                             <table class="table">
                                 <tr>
-                                    <td id="td_buy"><div class="text-center"><button type="button" class="btn btn-outline-primary btn-sm spread"><small>Bid: </small><br><div id="TO-BID">&nbsp;</div></button><button type="button" class="btn btn-outline-primary btn-sm spread"><small>Ask: </small><br><div id="TO-ASK">&nbsp;</div></button></div>
-                                    DLR.TO {{ form.DLR_TO }}</td>
-                                    <td id="td_sell"><div class="text-center"><button type="button" class="btn btn-outline-primary btn-sm spread"><small>Bid: </small><br><div id="U-BID">&nbsp;</div></button><button type="button" class="btn btn-outline-primary btn-sm spread"><small>Ask: </small><br><div id="U-ASK">&nbsp;</div></button></div>
-                                    DLR.U.TO {{ form.DLR_U_TO }}</td>
+                                    <td id="td_cad"><div class="text-center"><button type="button" class="btn btn-outline-primary btn-sm spread"><small>Bid: </small><br><div id="TO-BID">&nbsp;</div></button><button type="button" class="btn btn-outline-primary btn-sm spread"><small>Ask: </small><br><div id="TO-ASK">&nbsp;</div></button></div>
+                                    <div id="td_TO_label">DLR.TO</div> {{ form.DLR_TO }}</td>
+                                    <td id="td_usd"><div class="text-center"><button type="button" class="btn btn-outline-primary btn-sm spread"><small>Bid: </small><br><div id="U-BID">&nbsp;</div></button><button type="button" class="btn btn-outline-primary btn-sm spread"><small>Ask: </small><br><div id="U-ASK">&nbsp;</div></button></div>
+                                    <div id="td_U_label">DLR.U.TO</div> {{ form.DLR_U_TO }}</td>
                                 </tr>
                                 <tr>
                                     <td>
@@ -129,11 +129,11 @@
                             </table>
                         </div>
 
-                        <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                        <div class="modal fade" id="feeModal" tabindex="-1" aria-labelledby="feeModalLabel" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                    <h5 class="modal-title" id="exampleModalLabel">Fee Schedule</h5>
+                                    <h5 class="modal-title" id="feeModalLabel">Fee Schedule</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
@@ -168,6 +168,13 @@
                                                         {{ form.upper_bound }}
                                                     </td>
                                                 </tr>
+                                                <tr>
+                                                    <td colspan="2">
+                                                        <hr>
+                                                        <label for="brokers_spread" class="form-label">Brokers FX spread (%) for cost comparison (optional)</label>
+                                                        {{ form.brokers_spread }}
+                                                    </td>
+                                                </tr>
                                             </table>
                                     </div>
                                     <div class="modal-footer">
@@ -177,8 +184,56 @@
                             </div>
                         </div>
 
+                        <div class="modal fade" id="securitiesModal" tabindex="-1" aria-labelledby="securitiesModalLabel" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                    <h5 class="modal-title" id="securitiesModalLabel">Change Securities</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <h6>These fields are optional, and are used to change the pair of securities being used to something other than DLR.</h6>
+                                        <h6>Please enter all tickers <u>without</u> their official suffix. For example, DLR.TO would be entered as DLR, and DLR.U.TO would be entered as DLR.U.</h6>
+                                        <h6>Please specify whether each of the securities trade on the Canadian or American markets. For example, both DLR and DLR.U trade on Canadian markets. RY (CAD) trades on Canadian markets, and RY (USD) trades on American markets.</h6>
+                                            <table>
+                                                <tr>
+                                                    <td>
+                                                        <label for="cad_ticker" class="form-label">CAD Ticker</label>
+                                                        <input type="text" class="form-control" id="cad_ticker" value="DLR">
+                                                    </td>
+                                                    <td>
+                                                        <label for="cad_market" class="form-label">Listed On:</label>
+                                                        <select class="form-select" aria-label="Default select example" id="cad_market">
+                                                            <option value="C" selected>Canadian Markets</option>
+                                                            <option value="U">American Markets</option>
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <label for="usd_ticker" class="form-label">USD Ticker</label>
+                                                        <input type="text" class="form-control" id="usd_ticker" value="DLR.U">
+                                                    </td>
+                                                    <td>
+                                                        <label for="usd_market" class="form-label">Listed On:</label>
+                                                        <select class="form-select" aria-label="Default select example" id="usd_market">
+                                                            <option value="C" selected>Canadian Markets</option>
+                                                            <option value="U">American Markets</option>
+                                                        </select>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                    </div>
+                                    <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="refresh()">Done</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <button type="submit" style="margin-top: 5px; margin-bottom: 10px;" class="btn btn-outline-teal">Submit</button>
-                        <button type="button" style="margin-top: 5px; margin-bottom: 10px;" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Fee Schedule</button>                  
+                        <button type="button" style="margin-top: 5px; margin-bottom: 10px;" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#feeModal">Fee Schedule</button>                  
+                        <button type="button" style="margin-top: 5px; margin-bottom: 10px;" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#securitiesModal">Change Securities</button>
                     </form>
                 </div>
             </div>
@@ -195,8 +250,8 @@
                 </div>
 
                 <div class="row justify-content-md-center">
+                    <a class="text-teal" data-bs-toggle="collapse" href="#collapse0" role="button" aria-expanded="false" aria-controls="collapseExample"><h3 class="text-center">Transactions</h3></a>
                     <div class="col-lg-4">
-                        <a class="text-teal" data-bs-toggle="collapse" href="#collapse0" role="button" aria-expanded="false" aria-controls="collapseExample"><h3 class="text-center">Transactions</h3></a>
                         <div class="collapse show" id="collapse0"><div class="card card-body">
                             <div class="table-responsive" id="id_0"></div>
                         </div></div>
@@ -204,32 +259,39 @@
                 </div>
                 
                 <div class="row justify-content-md-center">
+                    <a class="text-teal" data-bs-toggle="collapse" href="#collapse1" role="button" aria-expanded="false" aria-controls="collapseExample"><h3 class="text-center">Total Costs</h3></a>
                     <div class="col-lg-4">
-                        <a class="text-teal" data-bs-toggle="collapse" href="#collapse1" role="button" aria-expanded="false" aria-controls="collapseExample"><h3 class="text-center">ECN Fees</h3></a>
-                        <div class="collapse" id="collapse1"><div class="card card-body">
+                        <div class="collapse show" id="collapse1"><div class="card card-body">
                             <div class="table-responsive" id="id_1"></div>
+                        </div></div>
+                    </div>
+                    <div class="col-lg-4 description">
+                        <div class="collapse show" id="collapse1"><div class="card card-body">
+                            <ul>
+                                <li><strong>Explicit Costs Incurred</strong> is the percentage of money converted that were lost to ECN fees and commissions.
+                                    It is calculated as: combined fees quoted in initial currency / amount of initial currency converted.</li>
+                                <li><strong>Implicit Spread Earned / Payed</strong> is the percentage difference between what was payed on the buy side and what was received on the sell side.</li>
+                                    This term is gross of explicit costs. Over the short term, it represents the bid / ask spread payed / received, but over longer periods of time, a meaningful price drift may occur between the Canadian and US dollar. 
+                                    This can be thought of as the gross return on the trade, and can be positive or negative. It is calculated as: amount received on sell side (quoted in terms of the initial currency on the sell date) / amount converted on buy side.
+                                <li><strong>TOTAL RETURN</strong> is a net figure, and represents the net return on the trades. It takes into account both the explicit fees payed, as well as the spread.
+                                    It is calculated as: ( amount received on the sell side - local sell fees (both quoted in terms of the initial currency on the sell date) - local buy fees ) / amount converted on buy side.</li>
+                                <li><strong>TOTAL P&L</strong> is the net dollar gain / loss expressed in the initial currency.
+                                    It is calculated as: ( amount received on the sell side - local sell fees (both quoted in terms of the initial currency on the sell date) - local buy fees ) - amount converted on buy side.</li>
+                                    <ul><li>If the optional brokers FX spread field is used, the BoC rate on the buy date will be used as the base fx rate, and the amount of currency converted will be the same amount as Norbert's Gambit. This figure it also quoted in terms of the initial currency.</li></ul>
+                            </ul>
                         </div></div>
                     </div>
                 </div>
 
                 <div class="row justify-content-md-center">
+                    <a class="text-teal" data-bs-toggle="collapse" href="#collapse2" role="button" aria-expanded="false" aria-controls="collapseExample"><h3 class="text-center">Explicit Costs</h3></a>
                     <div class="col-lg-4">
-                        <a class="text-teal" data-bs-toggle="collapse" href="#collapse2" role="button" aria-expanded="false" aria-controls="collapseExample"><h3 class="text-center">Commissions</h3></a>
                         <div class="collapse" id="collapse2"><div class="card card-body">
                             <div class="table-responsive" id="id_2"></div>
                         </div></div>
                     </div>
-                </div>
-
-                <div class="row justify-content-md-center">
-                    <a class="text-teal" data-bs-toggle="collapse" href="#collapse3" role="button" aria-expanded="false" aria-controls="collapseExample"><h3 class="text-center">Explicit Costs</h3></a>
-                    <div class="col-lg-4">
-                        <div class="collapse" id="collapse3"><div class="card card-body">
-                            <div class="table-responsive" id="id_3"></div>
-                        </div></div>
-                    </div>
                     <div class="col-lg-4 description">
-                        <div class="collapse" id="collapse3"><div class="card card-body">
+                        <div class="collapse" id="collapse2"><div class="card card-body">
                             <ul>
                                 <li>Explicit costs are defined as negative cash flows payed to a third party. In this case, explicit costs are comprised of ECN fees and commissions.</li>
                                 <li><strong>Local Cost</strong> represents the amount of money that was payed in each respective currency.</li>
@@ -241,25 +303,19 @@
                 </div>
 
                 <div class="row justify-content-md-center">
-                    <a class="text-teal" data-bs-toggle="collapse" href="#collapse4" role="button" aria-expanded="false" aria-controls="collapseExample"><h3 class="text-center">Total Costs</h3></a>
+                    <a class="text-teal" data-bs-toggle="collapse" href="#collapse3" role="button" aria-expanded="false" aria-controls="collapseExample"><h3 class="text-center">ECN Fees</h3></a>
+                    <div class="col-lg-4">
+                        <div class="collapse" id="collapse3"><div class="card card-body">
+                            <div class="table-responsive" id="id_3"></div>
+                        </div></div>
+                    </div>
+                </div>
+
+                <div class="row justify-content-md-center">
+                    <a class="text-teal" data-bs-toggle="collapse" href="#collapse4" role="button" aria-expanded="false" aria-controls="collapseExample"><h3 class="text-center">Commissions</h3></a>
                     <div class="col-lg-4">
                         <div class="collapse" id="collapse4"><div class="card card-body">
                             <div class="table-responsive" id="id_4"></div>
-                        </div></div>
-                    </div>
-                    <div class="col-lg-4 description">
-                        <div class="collapse" id="collapse4"><div class="card card-body">
-                            <ul>
-                                <li><strong>Explicit Costs Incurred</strong> is the percentage of money converted that were lost to ECN fees and commissions.
-                                    It is calculated as: combined fees quoted in initial currency / amount of initial currency converted.</li>
-                                <li><strong>Implicit Spread Earned / Payed</strong> is the percentage difference between what was payed on the buy side and what was received on the sell side.</li>
-                                    This term is gross of explicit costs. Over the short term, it represents the bid / ask spread payed / received, but over longer periods of time, a meaningful price drift may occur between the Canadian and US dollar. 
-                                    This can be thought of as the gross return on the trade, and can be positive or negative. It is calculated as: amount received on sell side (quoted in terms of the initial currency on the sell date) / amount converted on buy side.
-                                <li><strong>TOTAL RETURN</strong> is a net figure, and represents the net return on the trades. It takes into account both the explicit fees payed, as well as the spread.
-                                    It is calculated as: ( amount received on the sell side - local sell fees (both quoted in terms of the initial currency on the sell date) - local buy fees ) / amount converted on buy side.</li>
-                                <li><strong>TOTAL P&L</strong> is the net dollar gain / loss expressed in the initial currency.
-                                    It is calculated as: ( amount received on the sell side - local sell fees (both quoted in terms of the initial currency on the sell date) - local buy fees ) - amount converted on buy side.</li>
-                            </ul>
                         </div></div>
                     </div>
                 </div>

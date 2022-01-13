@@ -343,16 +343,16 @@ def norberts_gambit(request):
     else:
         form = NBForm(request.POST)
         if form.is_valid():
-            params = {k: float(form.cleaned_data[k]) for k in list(form.cleaned_data)[6:]}
-            output_transactions, output_ECN, output_commissions, output_explicit_costs, output_total = \
+            params = {k: float(form.cleaned_data[k]) for k in list(form.cleaned_data)[6:] if form.cleaned_data[k] != None}
+            output_transactions, output_total, output_explicit_costs, output_ECN, output_commissions  = \
             norbits_gambit_cost_calc(params, float(form.cleaned_data["DLR_TO"]), float(form.cleaned_data["DLR_U_TO"]), form.cleaned_data["buy_FX"], form.cleaned_data["sell_FX"], float(form.cleaned_data["initial"]), form.cleaned_data["initial_fx"], form.cleaned_data["incur_buy_side_ecn"], form.cleaned_data["incur_sell_side_ecn"])
 
             return JsonResponse({
                 "output_transactions": output_transactions.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
+                "output_total": output_total.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
+                "output_costs": output_explicit_costs.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
                 "output_ECN": output_ECN.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
                 "output_commissions": output_commissions.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
-                "output_costs": output_explicit_costs.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
-                "output_total": output_total.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
             })
         else:
             return JsonResponse({"ERROR": form.errors})

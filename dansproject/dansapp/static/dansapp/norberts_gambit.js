@@ -1,9 +1,5 @@
-function fetch_spreads(suffix="TO") {
-    if (suffix === "U") {
-        url = "https://www.stockwatch.com/Quote/Detail?C:DLR.U"
-    } else {
-        url = "https://www.stockwatch.com/Quote/Detail?C:DLR"
-    }
+function fetch_spreads(suffix="TO", ticker="DLR", market="C") {
+    url = `https://www.stockwatch.com/Quote/Detail?${market}:${ticker}`
 
     fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`)
     .then(response => {
@@ -11,14 +7,25 @@ function fetch_spreads(suffix="TO") {
         throw new Error('Network response was not ok.')
     })
     .then(data => {
-        document.querySelector(`#${suffix}-BID`).innerHTML = data.contents.slice(data.contents.search("UpdB")+6, data.contents.search("UpdB")+11)
-        document.querySelector(`#${suffix}-ASK`).innerHTML = data.contents.slice(data.contents.search("UpdA")+6, data.contents.search("UpdA")+11)
+        bid = data.contents.slice(data.contents.search("UpdB")+6, data.contents.search("UpdB")+11)
+        ask = data.contents.slice(data.contents.search("UpdA")+6, data.contents.search("UpdA")+11)
+        if (bid === "!DOCT") {
+            document.querySelector('#form-container').insertAdjacentHTML('afterbegin', 
+            `<div class="alert alert-danger alert-dismissible sticky-top fade show" role="alert">
+                <strong>Error:</strong> ${ticker} could not be found.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>`);
+            return
+        }
+        document.querySelector(`#${suffix}-BID`).innerHTML = bid
+        document.querySelector(`#${suffix}-ASK`).innerHTML = ask
+        document.querySelector(`#td_${suffix}_label`).innerHTML = ticker
     });
 }
 
 function refresh() {
-    fetch_spreads()
-    fetch_spreads("U")
+    fetch_spreads(suffix="TO", ticker=document.querySelector("#cad_ticker").value, market=document.querySelector("#cad_market").value)
+    fetch_spreads(suffix="U", ticker=document.querySelector("#usd_ticker").value, market=document.querySelector("#usd_market").value)
 }
 
 $(document).ready(function() {
@@ -67,7 +74,7 @@ $(document).ready(function() {
                         document.querySelector(`#id_${i}`).innerHTML = response[Object.keys(response)[i]]
                     }
                     //coloring
-                    document.querySelector("#id_4").firstChild.childNodes[3].childNodes.forEach(function(elem) {
+                    document.querySelector("#id_1").firstChild.childNodes[3].childNodes.forEach(function(elem) {
                         if (elem.tagName === "TR") {
                             if (elem.childNodes[1].innerHTML != "Explicit Costs Incurred") {
                                 if (elem.childNodes[3].innerHTML.substring(0, 1) === "-" || elem.childNodes[3].innerHTML.substring(1, 2) === "-") {
@@ -75,6 +82,7 @@ $(document).ready(function() {
                                 } else {
                                     elem.childNodes[3].style.color = "green"
                                 }
+                                elem.childNodes[5].style.color = "red"
                             }
                         }
                     })
@@ -101,13 +109,15 @@ $(document).ready(function() {
         })
     })
     document.querySelector("#id_initial_fx").addEventListener("change", function(event) {
-        td_buy = document.querySelector("#td_buy")
-        td_sell = document.querySelector("#td_sell")
-        var temp = document.createElement("div");
-        td_buy.parentNode.insertBefore(temp, td_buy);
-        td_sell.parentNode.insertBefore(td_buy, td_sell);
-        temp.parentNode.insertBefore(td_sell, temp);
-        temp.parentNode.removeChild(temp);
+        if (document.querySelector("#td_cad").parentElement.childNodes[1].id.substring(3, 7).toUpperCase() != event.currentTarget.value) {
+            td_cad = document.querySelector("#td_cad")
+            td_usd = document.querySelector("#td_usd")
+            var temp = document.createElement("div");
+            td_cad.parentNode.insertBefore(temp, td_cad);
+            td_usd.parentNode.insertBefore(td_cad, td_usd);
+            temp.parentNode.insertBefore(td_usd, temp);
+            temp.parentNode.removeChild(temp);
+        }
     })
     document.querySelector("#toggle_descriptions").addEventListener("click", function(event) {
         if (event.currentTarget.checked) {
