@@ -158,8 +158,8 @@ class RetsCSVForm(forms.ModelForm):
         }
 
 class NBForm(forms.Form):
-    DLR_TO = forms.DecimalField(decimal_places=4, min_value=0.01, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control'}))
-    DLR_U_TO = forms.DecimalField(decimal_places=4, min_value=0.01, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control'}))
+    DLR_TO = forms.DecimalField(decimal_places=4, min_value=0.01, max_value=99999.99, widget=forms.TextInput(attrs={'class':'form-control'}))
+    DLR_U_TO = forms.DecimalField(decimal_places=4, min_value=0.01, max_value=99999.99, widget=forms.TextInput(attrs={'class':'form-control'}))
     buy_FX = forms.DecimalField(decimal_places=4, min_value=0.01, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control', 'placeholder':'1 USD = '}))
     sell_FX = forms.DecimalField(decimal_places=4, min_value=0.01, max_value=999.99, widget=forms.TextInput(attrs={'class':'form-control', 'placeholder':'1 USD = '}))
     initial = forms.DecimalField(decimal_places=2, min_value=0.01, widget=forms.TextInput(attrs={'class':'form-control', 'placeholder':'$10,000'}))

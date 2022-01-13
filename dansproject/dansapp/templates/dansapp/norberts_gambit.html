@@ -54,7 +54,7 @@
                                                 Not only is it important to know the exact prices at which you will trade for the sake of accuracy, but also because it is likely that potential ECN fees will be codependent on whether you choose to transact at the bid or ask.</li>
                                             <li><strong>FX rates:</strong> Most tools only pull the current fx rate, and use it to calculate trading costs throughout the entire pair of trades. I have implemented the ability to specify an fx rate on both the date of purchase and the date of sale.
                                                 The benefits of this are twofold. First, inbetween the purchase and sale date, the investor may experience a meaningful amount of drift in currency prices. If this is not accounted for, the trading costs will not be accurate.
-                                                Second, the integrity of the data of past trades will not be skewed based off the interest rate drift from the time the trade occured to the time the calculation is being ran.</li>
+                                                Second, the integrity of the data of past trades will not be skewed based off the interest rate drift from the time the trades occured to the time the calculation is being ran.</li>
                                             <li><strong>Implicit costs:</strong> Most tools will only account for explicit trading costs, defined as the sum of the ECN fees and commissions. In addition to explicit costs, this tool also accounts for implicit trading costs.
                                                 These consist of both the bid / ask spreads that could be either payed or earned based on the investors liquidity preferences, and the profit / loss realized from fx rate drift while the trades are settling and the shares are journaling.</li>
                                         </ul>
@@ -277,7 +277,7 @@
                                     It is calculated as: ( amount received on the sell side - local sell fees (both quoted in terms of the initial currency on the sell date) - local buy fees ) / amount converted on buy side.</li>
                                 <li><strong>TOTAL P&L</strong> is the net dollar gain / loss expressed in the initial currency.
                                     It is calculated as: ( amount received on the sell side - local sell fees (both quoted in terms of the initial currency on the sell date) - local buy fees ) - amount converted on buy side.</li>
-                                    <ul><li>If the optional brokers FX spread field is used, the BoC rate on the buy date will be used as the base fx rate, and the amount of currency converted will be the same amount as Norbert's Gambit. This figure it also quoted in terms of the initial currency.</li></ul>
+                                    <ul><li>If the optional brokers FX spread field is used, the BoC rate on the buy date will be used as the base fx rate, and the amount of currency converted will be the same amount as Norbert's Gambit. This figure is also quoted in terms of the initial currency.</li></ul>
                             </ul>
                         </div></div>
                     </div>

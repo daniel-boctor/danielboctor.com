@@ -82,7 +82,7 @@ $(document).ready(function() {
                                 } else {
                                     elem.childNodes[3].style.color = "green"
                                 }
-                                elem.childNodes[5].style.color = "red"
+                                if (elem.childNodes.length > 5) {elem.childNodes[5].style.color = "red"}
                             }
                         }
                     })
@@ -94,9 +94,9 @@ $(document).ready(function() {
     document.querySelectorAll(".spread").forEach(function (elem) {
         elem.addEventListener("click", function(event) {
             if (event.currentTarget.childNodes[2].id.substring(0, 1) === "T") {
-                document.querySelector(`#id_DLR_TO`).value = event.currentTarget.childNodes[2].innerHTML
+                document.querySelector(`#id_DLR_TO`).value = event.currentTarget.childNodes[2].innerHTML.replace(',', '')
             } else {
-                document.querySelector(`#id_DLR_U_TO`).value = event.currentTarget.childNodes[2].innerHTML
+                document.querySelector(`#id_DLR_U_TO`).value = event.currentTarget.childNodes[2].innerHTML.replace(',', '')
             }
         })
     })
