@@ -7,9 +7,10 @@ function fetch_spreads(suffix="TO", ticker="DLR", market="C") {
         throw new Error('Network response was not ok.')
     })
     .then(data => {
-        bid = data.contents.slice(data.contents.search("UpdB")+6, data.contents.search("UpdB")+11)
-        ask = data.contents.slice(data.contents.search("UpdA")+6, data.contents.search("UpdA")+11)
-        if (bid === "!DOCT") {
+        b_pos = data.contents.search("UpdB")
+        a_pos = data.contents.search("UpdA")
+        
+        if (b_pos === -1) {
             document.querySelector('#form-container').insertAdjacentHTML('afterbegin', 
             `<div class="alert alert-danger alert-dismissible sticky-top fade show" role="alert">
                 <strong>Error:</strong> ${ticker} could not be found.
@@ -17,6 +18,9 @@ function fetch_spreads(suffix="TO", ticker="DLR", market="C") {
             </div>`);
             return
         }
+        bid = data.contents.slice(b_pos+6, b_pos+data.contents.slice(b_pos).search("<"))
+        ask = data.contents.slice(a_pos+6, a_pos+data.contents.slice(a_pos).search("<"))
+        
         document.querySelector(`#${suffix}-BID`).innerHTML = bid
         document.querySelector(`#${suffix}-ASK`).innerHTML = ask
         document.querySelector(`#td_${suffix}_label`).innerHTML = ticker
