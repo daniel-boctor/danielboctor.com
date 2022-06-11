@@ -1,0 +1,50 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    color: #fff;
+    font-family: "Poppins", sans-serif;
+}
+
+.navbar {
+    margin-bottom: -10px;
+}
+
+.parallax {
+    height: 100vh;
+}
+
+.parallax img {
+    width: 100%;
+    position: absolute;
+    min-height: 110vh;
+    object-fit: cover;
+    z-index: -1;
+}
+
+.content {
+    margin-top: 56px;
+    width: 100%;
+    background: #00DCDC;
+    min-height: 110vh;
+    z-index: 2;
+    position: absolute;
+}
+
+.center-pic {
+    display: block;
+    margin: auto;
+}
+
+.row-1-head {
+    margin-top: 10px;
+}
+.row-2-head {
+    margin-top: 10px;
+}
+.row-3-head {
+    margin-top: 10px;
+}
+.row-4-head {
+    margin-top: 10px;
+}

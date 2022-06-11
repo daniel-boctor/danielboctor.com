@@ -126,8 +126,8 @@ def portfolios(request, username):
                 "csvform": RetsCSVFormSet(queryset=RetsCSV.objects.filter(user=request.user))
             })
 
-def faq(request):
-    return render(request, "dansapp/faq.html")
+def about(request):
+    return render(request, "dansapp/about.html")
 
 def portfolio_api(request, name):
     if request.method != "POST":

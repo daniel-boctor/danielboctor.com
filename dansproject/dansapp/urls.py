@@ -16,7 +16,7 @@ urlpatterns = [
     path("user/<str:username>", views.user, name="user"),
     path("user/<str:username>/portfolios", views.portfolios, name="portfolios"),
     #misc
-    path("faq", views.faq, name="faq"),
+    path("about", views.about, name="about"),
     path("portfolio_api/<str:name>", views.portfolio_api, name="portfolio_api"),
     #finance routes
     path("backtest", views.backtest, name="backtest"),

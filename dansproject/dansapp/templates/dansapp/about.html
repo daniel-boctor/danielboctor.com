@@ -1,0 +1,96 @@
+{% extends "dansapp/layout.html" %}
+{% load static %}
+
+{% block title %}About{% endblock %}
+
+{% block script %}
+    <script src="{% static 'dansapp/about.js' %}"></script>
+    <link href="{% static 'dansapp/about.css' %}" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.1/gsap.min.js"
+    integrity="sha512-cdV6j5t5o24hkSciVrb8Ki6FveC2SgwGfLE31+ZQRHAeSRxYhAQskLkq3dLm8ZcWe1N3vBOEYmmbhzf7NTtFFQ=="
+    crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ScrollMagic/2.0.6/ScrollMagic.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ScrollMagic/2.0.6/plugins/animation.gsap.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/ScrollToPlugin.min.js"></script>
+    
+{% endblock %}
+
+{% block base-body %}
+<section>
+
+    <div class="parallax">
+        <img src="{% static 'dansapp/bg.png' %}" class="bg">
+        <img src="{% static 'dansapp/pi.png' %}" class="pi">
+        <img src="{% static 'dansapp/plates.png' %}" class="plates">
+    </div>
+
+    <div class="content">
+        <div class="container-fluid" style="margin-top: 20px">
+
+            <h1 class="main-title text-center" style="font-size: 6rem">I'm Daniel Boctor</h1>
+
+            <div class="row justify-content-md-center about">
+                <div class="col-sm-2">
+                    <img class="center-pic row-1-head" style="border-radius: 50%; width: 50%;" src="https://dwa5x7aod66zk.cloudfront.net/assets/labtocat-be5eee0434960a8f73e54910df8e87b8a5a3b2d651c0b301670c04a9cc26a70f.png">
+                </div>
+                <div class="col-sm-4">
+                    <h3 class="row-1-head">About Me</h3>
+                    <p class="row-1-body">My name is Daniel Boctor, and I'm currently a 3rd year undergraduate student. My main interests include network engineering, software engineering, and as AI / neural networks.
+                        I also study investment finance and asset pricing on the side. I'm working towards a full time role within the tech industry.<br></p> 
+                </div>
+            </div>
+            <div class="row justify-content-md-center contact">
+                <div class="col-sm-2">
+                    <a href="https://docs.google.com/document/d/1kSiW4_4ZqpYIgaM0xfItxiGOQac5z245M7XjpYFZheo/export?format=pdf" type="button" class="btn btn-outline-primary btn-lg row-2-head center-pic">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#0D6EFD" class="bi bi-file-earmark-arrow-down-fill" viewBox="0 0 16 16">
+                            <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0zM9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1zm-1 4v3.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 11.293V7.5a.5.5 0 0 1 1 0z"/>
+                        </svg>
+                        Download Resume</a>
+                </div>
+                <div class="col-sm-4">
+                    <h3 class="row-2-head">Contact Info</h3>
+                    <p class="row-2-body">
+                        🚀 Personal website hosted @ <a href="https://danielboctor.com">danielboctor.com</a>
+                        <br>
+                        🧠 Undergraduate Research Assistant @ <a href="https://sain.ca/authors/daniel-boctor">SAIN Lab</a>
+                        <br>
+                        💻 Github profile: <a href="https://github.com/daniel-boctor">Github</a>
+                        <br>
+                        💬 LinkedIn: <a href="https://linkedin.com/in/daniel-boctor">Linkedin</a>
+                        <br>
+                        📭 Email: <a href="mailto:daniel.boctor@ontariotechu.net">daniel.boctor@ontariotechu.net</a>
+                        <br>
+                    </p>
+                </div>
+            </div>
+            <div class="row justify-content-md-center education">
+                <div class="col-sm-2">
+                    <img class="center-pic row-3-head" style="width: 100%;" src="https://shared.uoit.ca/global/files/img/logos/rgb-logo.png">
+                </div>
+                <div class="col-sm-4">
+                    <h3 class="row-3-head">Education</h3>
+                    <p class="row-3-body">I'm currently a 3rd year undergraduate student pursuing a degree in Networking & IT Security at Ontario Tech University.<br>GPA: 4.16<br></p> 
+                </div>
+            </div>
+            <div class="row justify-content-md-center experience">
+                <div class="col-sm-2">
+                    <img class="center-pic row-4-head" style="width: 100%;" src="https://www.transparent.ca/wp-content/uploads/2016/09/cisco-meraki-logo.png">
+                </div>
+                <div class="col-sm-4">
+                    <h3 class="row-4-head">Experience</h3>
+                    <p class="row-4-body">I'm currently working as Network Support Engineer Intern at Cisco Meraki.<br></p> 
+                </div>
+            </div>
+
+        </div>
+        <button style="border-radius: 50%;" type="button" class="btn btn-outline-primary btn-lg scroll-to-top center-pic" style="bottom: 0%;" onclick="gsap.to(window, {scrollTo: 0})">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#0D6EFD" class="bi bi-arrow-up-circle" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8zm15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-7.5 3.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708l3-3a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V11.5z"/>
+            </svg>
+        </button>
+    </div>
+    
+</section>
+    
+{% endblock %}
