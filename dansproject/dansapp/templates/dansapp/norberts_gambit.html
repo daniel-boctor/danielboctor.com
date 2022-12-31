@@ -12,6 +12,7 @@
         <script src="{% static 'dansapp/script.js' %}"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
         <script src="{% static 'dansapp/norberts_gambit.js' %}"></script>
+        <script>var auth = "{{request.user.is_authenticated}}"</script>
         <style>
             .spread {
                 margin-right: 5px;
@@ -26,11 +27,70 @@
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'index' %}">Home</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+            	<span class="navbar-toggler-icon"></span>
+			</button>
+            <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+				<div class="navbar-nav ms-auto">
+                    {% if not user.is_authenticated %}
+                        <a class="nav-link" href="{% url 'login' %}">Login</a>
+                        <a class="nav-link" href="{% url 'register' %}">Register</a>
+                    {% endif %}
+                    {% if user.is_authenticated %}
+                        <a class="nav-link" href="{% url 'user' user.username %}"><strong>{{ user.username }}</strong></a>
+                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+                    {% endif %}
+                </div>
+            </div>
         </div>
         </nav>
 
         <div class="container-fluid">
-            <h1 class="text-center">Norbert's Gambit Calculator</h1>
+
+            <div class="row">
+                <div class="col-lg" style="margin-bottom: 5px;">
+                    <button class="btn btn-outline-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">
+                        Saved Trades
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-right-square" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M15 2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2zM0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm4.5 5.5a.5.5 0 0 0 0 1h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H4.5z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="col-lg" style="margin-bottom: 5px;">
+                    <h1 class="text-center">Norbert's Gambit Calculator</h1>
+                </div>
+                <div class="col-lg" style="margin-bottom: 5px;"></div>
+            </div>
+
+            <div class="offcanvas offcanvas-start" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling" aria-labelledby="offcanvasScrollingLabel">
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title" id="offcanvasScrollingLabel">Saved Trades</h5>
+                    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body">
+                    {% if not user.is_authenticated %}
+                        Please <a href="{% url 'login' %}" class="link-primary">login</a> or <a href="{% url 'register' %}" class="link-primary">sign up</a> to save trades.
+                    {% else %}
+                        <div class="btn-group">
+                        <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Filter</button>
+                        <ul class="dropdown-menu" id="filter-dropdown-menu">
+                        </ul>
+                        </div>
+
+                        <div class="btn-group">
+                        <button type="button" class="btn btn-outline-success" onclick="load_tax()">Generate Tax Information All</button>
+                        <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="visually-hidden">Toggle Dropdown</span>
+                        </button>
+                        <ul class="dropdown-menu" id="tax-dropdown-menu">
+                        </ul>
+                        </div>
+
+                        <hr>
+                        <div id="trades-container"></div>
+                    {% endif %}
+                </div>
+            </div>
 
             <div class="row justify-content-md-center">
                 <div class="col-lg-4">
@@ -66,12 +126,49 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingThree">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                    Tax Info
+                                </button>
+                            </h2>
+                            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
+                                <div class="accordion-body">
+                                    This information is provided for Canadian tax filing purposes, and conforms to standards outlined by the Canada Revenue Agency. All figures are quoted in CAD. For further information on how capital gains / losses are treated under Canadian tax code, 
+                                        please refer to <a href="https://www.canada.ca/en/revenue-agency/services/forms-publications/publications/t4037/capital-gains.html">T4037(E)</a>.
+                                    <ul>
+                                        <li><strong>Proceeds</strong> are defined as the amount of money received for selling capital property. If this is in foreign currency terms, it is converted to CAD using the FX rate on the <b class="text-success">sale date</b>.</li>
+                                        <li><strong>ACB</strong> (Adjusted Cost Base) is defined as the cost of capital property, plus any expenses to acquire it. If this is in foreign currency terms, it is converted to CAD using the FX rate on the <b class="text-success">purchase date</b>.</li>
+                                        <li><strong>Outlays</strong> and expenses are the amounts that are incurred to sell capital property. They are deducted from the proceeds of disposition when calculating your capital gain or loss. If this is in foreign currency terms, it is converted to CAD using the FX rate on the <b class="text-success">sale date</b>.</li>
+                                        <li><strong>Capital Gain / Loss</strong> is calculated by subtracting the ACB, and any outlays and expenses incurred to sell capital property, from the proceeds of disposition. If the resulting figure is positive, it is a capital gain. If the figure is negative, it is a capital loss.</li>
+                                    </ul>
+                                    When comparing the results of this calculator to other records, such as those from other calculators or those self kept, there may be discrepancies that arise due to differences in methodology.
+                                    <ul>
+                                        <li><strong>Direct FX Quotes:</strong> This calculator uses direct currency quotes (price of one unit of foreign currency is expressed in terms of the domestic currency). This is in contract to indirect currency quotes (price of one unit of domestic currency is expressed in terms of foreign currency).
+                                            If another calculation is done using an indirect quote, there will be a discrepancies in end results. This is because currencies are quoted in terms of 4 decimal places, yet the reciprocal is needed to accurately convert between them. 
+                                            For example, if 1 USD = 1.3565, for no information to be lost, 1 CAD would need to be calculated as (1 / 1.3565) = 0.737191301..., however, it is likely the indirect quote was given as 0.7372. While both methods are valid, the direct approach is preferred, as it is the official rate that the Bank of Canada publishes.</li>
+                                        <li><strong>Rounding:</strong> There may be cases when rounding methodologies differ between this calculator and other calculators or brokerages. For example, in this calculator, principal amounts are not rounded to the nearest cent, whereas ECN fees and commissions are.</li>
+                                        <li><strong>ECN Fees:</strong> It is important to note how ECN fees are handled, as misconceptions could lead to incorrect results. The 'incur ECN' checkboxes are intended to specify wheather or not ECN fees will be levied on the full quantity of the trade (round lots and odd lots). 
+                                            If left unchecked, ECN fees will still be levied against odd lots. For cases where you wish to have no ECN fees levied at all, the ECN parameters within the fee schedule should be adjusted to 0.</li>
+                                    </ul>
+                                    For any further questions regarding methodology, or to request new features, please contact me at <a href="mailto:daniel.boctor@ontariotechu.net">daniel.boctor@ontariotechu.net</a>.
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <br>
 
-            <div class="row justify-content-md-center">
+            <div class="row justify-content-md-center" id="tax_container" style="display: none;">
+                <div class="col-lg-4">
+                    <button type="button" style="margin-top: 5px; margin-bottom: 10px;" class="btn btn-outline-success" id="back-to-body" onclick="back_to_body()">Back</button>
+                    <h3 style="color: green;" class="text-center" id="tax_table_title"></h3>
+                    <div id="tax_table_container"></div>
+                </div>
+            </div>
+
+            <div class="row justify-content-md-center" id="body">
                 <div class="col-lg-4" id="form-container">
                     <form id="post-form">
                         <button onclick="refresh()" type="button" class="btn btn-link">Refresh Spreads
@@ -86,7 +183,7 @@
                                     <td id="td_cad"><div class="text-center"><button type="button" class="btn btn-outline-primary btn-sm spread"><small>Bid: </small><br><div id="TO-BID">&nbsp;</div></button><button type="button" class="btn btn-outline-primary btn-sm spread"><small>Ask: </small><br><div id="TO-ASK">&nbsp;</div></button></div>
                                     <div id="td_TO_label">DLR.TO</div> {{ form.DLR_TO }}</td>
                                     <td id="td_usd"><div class="text-center"><button type="button" class="btn btn-outline-primary btn-sm spread"><small>Bid: </small><br><div id="U-BID">&nbsp;</div></button><button type="button" class="btn btn-outline-primary btn-sm spread"><small>Ask: </small><br><div id="U-ASK">&nbsp;</div></button></div>
-                                    <div id="td_U_label">DLR.U.TO</div> {{ form.DLR_U_TO }}</td>
+                                    <div id="td_U_label">DLR-U.TO</div> {{ form.DLR_U_TO }}</td>
                                 </tr>
                                 <tr>
                                     <td>
@@ -113,7 +210,13 @@
                                     {{ form.sell_FX }}</td>
                                 </tr>
                                 <tr>
-                                    <td>Cash to convert{{ form.initial }}</td>
+                                    <td style="width: 50%;">
+                                        Cash / shares to convert
+                                        <div class="input-group">
+                                            <span class="input-group-text" id="initial-type">$</span>
+                                            {{ form.initial }}
+                                        </div>
+                                    </td>
                                     <td>&nbsp;{{ form.initial_fx }}</td>
                                 </tr>
                                 <tr>
@@ -193,33 +296,17 @@
                                     </div>
                                     <div class="modal-body">
                                         <h6>These fields are optional, and are used to change the pair of securities being used to something other than DLR.</h6>
-                                        <h6>Please enter all tickers <u>without</u> their official suffix. For example, DLR.TO would be entered as DLR, and DLR.U.TO would be entered as DLR.U.</h6>
-                                        <h6>Please specify whether each of the securities trade on the Canadian or American markets. For example, both DLR and DLR.U trade on Canadian markets. RY (CAD) trades on Canadian markets, and RY (USD) trades on American markets.</h6>
+                                        <h6>Please enter all tickers <u>with</u> their official suffix. For example, securities trading on the TSX have a suffix of '.TO', while securities trading on the CVE have a suffix of '.V'.</h6>
+                                        <h6>Dashes (-) should be used for all other cases other than official suffixes, where a period (.) would otherwise reside. This includes share classes (BRK-A and BRK-B) as well as ticker names (DLR-U.TO)</h6>
                                             <table>
                                                 <tr>
                                                     <td>
                                                         <label for="cad_ticker" class="form-label">CAD Ticker</label>
-                                                        <input type="text" class="form-control" id="cad_ticker" value="DLR">
+                                                        {{ form.cad_ticker }}
                                                     </td>
-                                                    <td>
-                                                        <label for="cad_market" class="form-label">Listed On:</label>
-                                                        <select class="form-select" aria-label="Default select example" id="cad_market">
-                                                            <option value="C" selected>Canadian Markets</option>
-                                                            <option value="U">American Markets</option>
-                                                        </select>
-                                                    </td>
-                                                </tr>
-                                                <tr>
                                                     <td>
                                                         <label for="usd_ticker" class="form-label">USD Ticker</label>
-                                                        <input type="text" class="form-control" id="usd_ticker" value="DLR.U">
-                                                    </td>
-                                                    <td>
-                                                        <label for="usd_market" class="form-label">Listed On:</label>
-                                                        <select class="form-select" aria-label="Default select example" id="usd_market">
-                                                            <option value="C" selected>Canadian Markets</option>
-                                                            <option value="U">American Markets</option>
-                                                        </select>
+                                                        {{ form.usd_ticker }}
                                                     </td>
                                                 </tr>
                                             </table>
@@ -230,10 +317,32 @@
                                 </div>
                             </div>
                         </div>
-
-                        <button type="submit" style="margin-top: 5px; margin-bottom: 10px;" class="btn btn-outline-teal">Submit</button>
+                        <div class="btn-group" style="margin-top: 5px; margin-bottom: 10px;">
+                            <button data-crudop="/" type="submit" class="btn btn-outline-teal">Submit</button>
+                            <button type="button" class="btn btn-outline-teal dropdown-toggle dropdown-toggle-split" data-bs-toggle="collapse" data-bs-target="#crud_collapse" aria-expanded="false" aria-controls="crud_collapse">
+                                <span class="visually-hidden">Toggle Dropdown</span>
+                            </button>
+                        </div>
                         <button type="button" style="margin-top: 5px; margin-bottom: 10px;" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#feeModal">Fee Schedule</button>                  
                         <button type="button" style="margin-top: 5px; margin-bottom: 10px;" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#securitiesModal">Change Securities</button>
+                        <div class="collapse" id="crud_collapse" style="margin-top: 5px; margin-bottom: 10px;">
+                            <div class="card card-body">
+                                <div class="input-group mb-3">
+                                    {{ form.name }}
+                                    {{ form.date }}
+                                    <span class="input-group-text" id="basic-addon1">
+                                        {{ form.closed.label_tag }}&nbsp;
+                                        {{ form.closed }}
+                                    </span>
+                                    <button data-crudop="{% if form.name.value %}/update/{{ form.name.value }}{% else %}/create{% endif %}" type="submit" class="btn btn-primary">
+                                        {% if form.name.value %}Update {{ form.name.value }}{% else %}Save Trade{% endif %}
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-right-square" viewBox="0 0 16 16">
+                                            <path fill-rule="evenodd" d="M15 2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2zM0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm4.5 5.5a.5.5 0 0 0 0 1h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H4.5z"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -316,6 +425,15 @@
                     <div class="col-lg-4">
                         <div class="collapse" id="collapse4"><div class="card card-body">
                             <div class="table-responsive" id="id_4"></div>
+                        </div></div>
+                    </div>
+                </div>
+
+                <div class="row justify-content-md-center">
+                    <a class="text-teal" data-bs-toggle="collapse" href="#collapse5" role="button" aria-expanded="false" aria-controls="collapseExample"><h3 class="text-center">Tax Information</h3></a>
+                    <div class="col-lg-4">
+                        <div class="collapse" id="collapse5"><div class="card card-body">
+                            <div class="table-responsive" id="id_5"></div>
                         </div></div>
                     </div>
                 </div>

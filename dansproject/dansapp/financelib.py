@@ -290,12 +290,17 @@ def summary_stats(r, riskfree_rate=0, periods_per_year=12):
     cf_var5 = r.aggregate(var_gaussian, modified=True)
     hist_cvar5 = r.aggregate(cvar_historic)
     dd = r.aggregate(only_drawdown)
+    du = r.aggregate(drawup)
+    wealth_index = (r+1).cumprod()
     return pd.DataFrame({
         "Annualized Return": round(ann_r*100, 2).astype(str) + "%",
         "Annualized Vol": round(ann_vol*100, 2).astype(str) + "%",
         "Max Drawdown": round(dd.min()*100, 2).astype(str) + "%",
         "Max Drawdown Date": dd.idxmin(),
         "Current Drawdown": round(dd.iloc[-1]*100, 2).astype(str) + "%",
+        "Trough to Present": round(du.iloc[-1]*100, 2).astype(str) + "%",
+        "Peak Date": wealth_index.idxmax(),
+        "Trough Date": wealth_index.idxmin(),
         "Skewness": round(skew, 2),
         "Kurtosis": round(kurt, 2),
         "Cornish-Fisher VaR (5% level)": round(cf_var5*100, 2).astype(str) + "%",
@@ -308,6 +313,12 @@ def only_drawdown(rets):
     previous_peaks = wealth_index.cummax()
     drawdowns = (wealth_index - previous_peaks)/previous_peaks
     return drawdowns
+
+def drawup(rets):
+    wealth_index = pd.concat([pd.Series([1]), (1+rets).cumprod()])
+    previous_troughs = wealth_index.cummin()
+    drawups = (wealth_index - previous_troughs)/previous_troughs
+    return drawups
 
 def horserace(rets, wealth=10000):
     horserace = pd.DataFrame(index=(rets.columns))
@@ -390,8 +401,8 @@ def norbits_gambit_cost_calc(params, DLR_TO, DLR_U_TO, buy_FX, sell_FX, initial=
     data.loc["SELL_FX"] = [sell_FX, 1/sell_FX, DLR_TO, DLR_U_TO]
     data = data.astype(np.float64)
 
-    FROM = ["CAD", "DLR.TO", "USD_TO_CAD"] if initial_fx == "CAD" else ["USD", "DLR-U.TO", "CAD_TO_USD"]
-    TO = ["CAD", "DLR.TO", "USD_TO_CAD"] if initial_fx != "CAD" else ["USD", "DLR-U.TO", "CAD_TO_USD"]
+    FROM = ["CAD", "DLR.TO", "USD_TO_CAD"] if initial_fx in ["CAD", "TO"] else ["USD", "DLR-U.TO", "CAD_TO_USD"]
+    TO = ["CAD", "DLR.TO", "USD_TO_CAD"] if initial_fx not in ["CAD", "TO"] else ["USD", "DLR-U.TO", "CAD_TO_USD"]
 
     output_ECN = pd.DataFrame(columns=["Currency", "# Shares", "ECN / Share", "Total ECN Payed"],
                                 index=["Buy Side", "Sell Side"])
@@ -405,7 +416,7 @@ def norbits_gambit_cost_calc(params, DLR_TO, DLR_U_TO, buy_FX, sell_FX, initial=
     output_total = pd.DataFrame(columns=([""]),
                                 index=["Explicit Costs Incurred", "Implicit Spread Earned / Payed", "TOTAL RETURN"])
     
-    shares = floor(initial / data[FROM[1]][0])
+    shares = floor(initial / data[FROM[1]][0]) if initial_fx in ["CAD", "USD"] else initial
 
     #ECN
     if buy_side_ecn:
@@ -423,7 +434,7 @@ def norbits_gambit_cost_calc(params, DLR_TO, DLR_U_TO, buy_FX, sell_FX, initial=
     output_commissions.loc["Sell Side"] = [TO[0], shares, params["sell_side_comm"], round(min(max(params["sell_side_comm"] * shares, params["lower_bound"]), params["upper_bound"]), 2) if params["sell_side_comm"] else 0]
 
     #Transactions
-    output_transactions.loc["Buy Side"] = [FROM[0], shares, shares * data[FROM[1]][0], initial - (shares * data[FROM[1]][0])]
+    output_transactions.loc["Buy Side"] = [FROM[0], shares, shares * data[FROM[1]][0], (initial - (shares * data[FROM[1]][0])) if initial_fx in ["CAD", "USD"] else "N/A"]
     output_transactions.loc["Sell Side"] = [TO[0], shares, shares * data[TO[1]][0], ""]
 
     #Explicit Costs
@@ -444,4 +455,15 @@ def norbits_gambit_cost_calc(params, DLR_TO, DLR_U_TO, buy_FX, sell_FX, initial=
         output_total["Brokers Spread For Comparison"] = ["", "", "-" + str(params["brokers_spread"]) + "%", "-$" + str(round((params["brokers_spread"]/100) * output_transactions["Amount Converted / Received"]["Buy Side"], 2))]
         #output_total["financial mathematics"] = ["", "", "-" + str(params["brokers_spread"]) + "%", "$" + str((output_transactions["Amount Converted / Received"]["Buy Side"] * data[TO[2]][0] * (1/data[TO[2]][0])) - ((params["brokers_spread"]/100) * output_transactions["Amount Converted / Received"]["Buy Side"]) - (output_transactions["Amount Converted / Received"]["Buy Side"]))]
 
-    return output_transactions, output_total, output_explicit_costs, output_ECN, output_commissions 
+    output_tax = pd.DataFrame(columns=["Proceeds", "ACB", "Outlays", "Capital Gain / Loss"], index=[""])
+
+    CAD_TERMS_BUY_DATE = 1 if FROM[0] == "CAD" else data[TO[2]][0]
+    CAD_TERMS_SELL_DATE = 1 if TO[0] == "CAD" else data[FROM[2]][-1]
+
+    output_tax["Proceeds"][""] = round(output_transactions.loc["Sell Side"][2] * CAD_TERMS_SELL_DATE, 2)
+    output_tax["ACB"][""] = round((output_transactions.loc["Buy Side"][2] + output_explicit_costs[FROM[0]]["Local Cost"]) * CAD_TERMS_BUY_DATE, 2)
+    output_tax["Outlays"][""] = round(output_explicit_costs[TO[0]]["Local Cost"] * CAD_TERMS_SELL_DATE, 2)
+    output_tax["Capital Gain / Loss"][""] = round(output_tax["Proceeds"][""] - output_tax["ACB"][""] - output_tax["Outlays"][""], 2)
+    output_tax.loc[""] = "$" + output_tax.loc[""].astype(str)
+
+    return output_transactions, output_total, output_explicit_costs, output_ECN, output_commissions, output_tax
