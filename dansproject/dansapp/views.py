@@ -1,18 +1,16 @@
 from django.shortcuts import redirect, render
 from django.contrib import messages
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse, HttpResponsePermanentRedirect
 from django.urls import reverse
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError
-from .models import User, Portfolio, RetsCSV, NB
+from .models import User, Portfolio, RetsCSV
 from django.contrib.auth.decorators import login_required
-from .forms import MyUserCreationForm, UserUpdateForm, MetaForm, PortfolioForm, TickerForm, BasePortfolioFormSet, RetsCSVForm, NBForm
+from .forms import MyUserCreationForm, UserUpdateForm, MetaForm, PortfolioForm, TickerForm, BasePortfolioFormSet, RetsCSVForm
 from django.forms import modelformset_factory
 import pandas as pd
 from pandas_datareader import data as pdr
 from .financelib import *
-from django_hosts.resolvers import reverse
-import requests
 
 pd.options.plotting.backend = "plotly"
 
@@ -339,89 +337,5 @@ def factors(request):
     })
 
 def norberts_gambit(request, crudop=None, name=None):
-    if request.method == "GET":
-        if not crudop or not request.user.is_authenticated:
-            return render(request, "dansapp/norberts_gambit.html", {"form": NBForm})
-
-        instance = NB.objects.filter(user=request.user, name=name)
-        if crudop == "read":
-            if instance.exists():
-                return render(request, "dansapp/norberts_gambit.html", {"form": NBForm(instance=instance[0])})
-            return HttpResponseRedirect(reverse("norberts_gambit", host="norbertsgambit")) 
-        if crudop == "delete":
-            if instance.exists():
-                instance[0].delete()
-                return JsonResponse({"MESSAGE": ['secondary', 'Alert', f'{name} has been deleted!']})
-            return JsonResponse({"MESSAGE": ['danger', 'Alert', f'{name} was not found!']})
-
-    if request.method == "POST":
-        if crudop == "update" and NB.objects.filter(user=request.user, name=name).exists():
-            form = NBForm(request.POST, instance=NB.objects.filter(user=request.user, name=name)[0])
-        else:
-            form = NBForm(request.POST, user=request.user)
-
-        if form.is_valid():
-            message = None
-            if crudop:
-                if request.user.is_authenticated:
-                    instance = form.save(commit=False)
-                    instance.user = request.user
-                    if NB.objects.filter(user=request.user, name=instance.name).exists() and NB.objects.get(user=request.user, name=instance.name).id != instance.id:
-                        message = ['danger', 'Alert', f'Trade named {instance.name} already exists.']
-                    else:
-                        instance.save()
-                        message = ['success', 'Alert', f'{instance.name} has been {crudop}d!']
-                else:
-                    message = ['warning', 'Alert', 'You must be logged in to save instances to your account.']
-
-            params = {k: float(form.cleaned_data[k]) for k in list(form.cleaned_data)[8:-3] if form.cleaned_data[k] != None}
-            output_transactions, output_total, output_explicit_costs, output_ECN, output_commissions, output_tax  = \
-            norbits_gambit_cost_calc(params, float(form.cleaned_data["DLR_TO"]), float(form.cleaned_data["DLR_U_TO"]), form.cleaned_data["buy_FX"], form.cleaned_data["sell_FX"], float(form.cleaned_data["initial"]), form.cleaned_data["initial_fx"], form.cleaned_data["incur_buy_side_ecn"], form.cleaned_data["incur_sell_side_ecn"])
-
-            return JsonResponse({
-                "MESSAGE": message,
-                "output_transactions": output_transactions.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
-                "output_total": output_total.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
-                "output_costs": output_explicit_costs.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
-                "output_ECN": output_ECN.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
-                "output_commissions": output_commissions.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
-                "output_tax": output_tax.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset"),
-            })
-        else:
-            return JsonResponse({
-                "ERROR": form.errors
-            })
-
-def scrape_spreads(request, ticker):
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36'}
-    r = requests.get(f"https://finance.yahoo.com/quote/{ticker}", headers=headers)
-    if r.text.find("BID-value") == -1: return JsonResponse({'status': 'false','message': f'{ticker} not found'}, status=400)
-    return JsonResponse({
-        "BID": r.text[r.text.find("BID-value")+11:].split()[0],
-        "ASK": r.text[r.text.find("ASK-value")+11:].split()[0]
-    })
-
-def norberts_gambit_api(request):
-    year = request.GET.get("year", None)
-    if year: queryset = NB.objects.filter(user=request.user, date__year=year)
-    else: queryset = NB.objects.filter(user=request.user)
-    return JsonResponse({trade[0]: [trade[1], trade[2], trade[3] if trade[3] in ["CAD", "USD"] else trade[5] if trade[3] == "TO" else trade[6], 'closed' if trade[4] else 'open'] for trade in queryset.order_by('-date').values_list('name', 'date', 'initial', 'initial_fx', 'closed', 'cad_ticker', 'usd_ticker')})
-
-def norberts_gambit_tax(request):
-    name = request.GET.get("name", None)
-    year = request.GET.get("year", None)
-    if name:
-        queryset = NB.objects.filter(user=request.user, name=name).order_by('-date').values()
-    elif year:
-        queryset = NB.objects.filter(user=request.user, date__year=year).order_by('-date').values()
-    else:
-        queryset = NB.objects.filter(user=request.user).order_by('-date').values()
-    output = pd.DataFrame()
-    for data in queryset:
-        params = {k: float(data[k]) for k in list(data)[10:-3] if data[k] != None}
-        _, _, _, _, _, output_tax  = norbits_gambit_cost_calc(params, float(data["DLR_TO"]), float(data["DLR_U_TO"]), data["buy_FX"], data["sell_FX"], float(data["initial"]), data["initial_fx"], data["incur_buy_side_ecn"], data["incur_sell_side_ecn"])
-        output_tax.index = [data["name"]]
-        output_tax.insert(0, "Ticker", data["cad_ticker"])
-        output = pd.concat([output, output_tax])
-    
-    return JsonResponse({"output_tax": output.to_html(classes=["table table-hover table-fit-center"], border=0,  justify="unset")})
+    #norbertsgambit.danielboctor.com has been permanently moved to norbertsgambit.net
+    return HttpResponsePermanentRedirect('https://norbertsgambit.net')

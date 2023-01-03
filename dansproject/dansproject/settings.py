@@ -60,10 +60,8 @@ ROOT_HOSTCONF = 'dansproject.hosts'
 DEFAULT_HOST = 'root'
 if DEBUG:
     PARENT_HOST = 'danielboctordev.com'
-    SESSION_COOKIE_DOMAIN = '.danielboctordev.com'
 else:
     PARENT_HOST = 'danielboctor.com'
-    SESSION_COOKIE_DOMAIN = '.danielboctor.com'
 
 ROOT_URLCONF = 'dansproject.urls'
 
